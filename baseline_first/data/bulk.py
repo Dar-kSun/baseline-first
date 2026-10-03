@@ -62,16 +62,43 @@ def to_counts(block: np.ndarray) -> np.ndarray:
     the counts back exactly. Anything that does not come back integral within
     1e-3 is refused rather than guessed at.
     """
+    counts, ok = recover_counts(block)
+    if not ok.all():
+        raise ValueError("values are neither counts nor log1p(scaled counts)")
+    return counts
+
+
+MAX_SMALLEST_COUNT = 8
+
+
+def recover_counts(block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Like `to_counts`, but per cell: return (counts, ok), with ok False where a
+    cell cannot be recovered exactly.
+
+    A file that keeps only a subset of genes can leave a cell with no count of 1
+    among them, so its smallest stored value stands for a count of 2 or more.
+    Each such cell is retried assuming its smallest value is a count of k =
+    2..MAX_SMALLEST_COUNT, accepting the smallest k that makes every value an
+    integer within 1e-3. Rows that still fail come back as zeros with ok False.
+    """
     if np.all(np.mod(block, 1) == 0):
-        return block
+        return block, np.ones(len(block), dtype=bool)
     scaled = np.expm1(block)
     unit = np.where(scaled > 0, scaled, np.inf).min(axis=1, keepdims=True)
     unit[~np.isfinite(unit)] = 1.0
-    counts = scaled / unit
-    rounded = np.rint(counts)
-    if np.abs(counts - rounded).max() > 1e-3:
-        raise ValueError("values are neither counts nor log1p(scaled counts)")
-    return rounded
+    out = np.zeros_like(scaled)
+    ok = np.zeros(len(block), dtype=bool)
+    for k in range(1, MAX_SMALLEST_COUNT + 1):
+        todo = ~ok
+        if not todo.any():
+            break
+        counts = scaled[todo] / unit[todo] * k
+        rounded = np.rint(counts)
+        exact = np.abs(counts - rounded).max(axis=1) <= 1e-3
+        rows = np.flatnonzero(todo)[exact]
+        out[rows] = rounded[exact]
+        ok[rows] = True
+    return out, ok
 
 
 def pseudobulk(
@@ -83,6 +110,7 @@ def pseudobulk(
     log_every: int = 10,
     checkpoint_every: int = 10,
     moments_of: str | None = None,
+    max_skip_fraction: float = 0.01,
 ) -> ad.AnnData:
     """Sum cells per (cell type, perturbation) group.
 
@@ -95,6 +123,10 @@ def pseudobulk(
     moments of v = log1p(1e4 * counts / total), from which gene-gene
     covariances follow. They are stored in ``uns["moments"][cell_type]`` as
     ``n`` (cells), ``sum`` (genes) and ``outer`` (genes x genes, sum of v v^T).
+
+    Cells whose counts cannot be recovered exactly (see `recover_counts`) are
+    left out of every sum and counted in ``obs["n_skipped"]``; more than
+    `max_skip_fraction` of cells skipped stops the run.
     """
     obs, X = h5["obs"], h5["X"]
     perts = read_column(obs, pert_col)
@@ -112,6 +144,7 @@ def pseudobulk(
     state = {
         "counts": np.zeros((len(groups), len(genes))),
         "cpm": np.zeros((len(groups), len(genes))),
+        "skipped": np.zeros(len(groups)),
     }
     if moments_of is not None:
         state["m_n"] = np.zeros(len(types))
@@ -120,20 +153,26 @@ def pseudobulk(
     start = 0
     if checkpoint is not None and checkpoint.exists():
         saved = np.load(checkpoint)
-        state = {k: saved[k] for k in state}
+        state = {k: saved[k] if k in saved.files else v for k, v in state.items()}
         start = int(saved["next_row"])
         print(f"resuming at row {start:,}")
 
     n, began = len(perts), time.time()
     for i, row in enumerate(range(start, n, chunk)):
         stop = min(row + chunk, n)
-        block = to_counts(read_rows(X, row, stop))
+        block, ok = recover_counts(read_rows(X, row, stop))
         totals = np.where((t := block.sum(axis=1, keepdims=True)) > 0, t, 1)
         idx = inverse[row:stop]
-        np.add.at(state["counts"], idx, block)
-        np.add.at(state["cpm"], idx, block / totals * 1e6)
-        if moments_of is not None and in_moments[row:stop].any():
-            sel = in_moments[row:stop]
+        np.add.at(state["counts"], idx[ok], block[ok])
+        np.add.at(state["cpm"], idx[ok], block[ok] / totals[ok] * 1e6)
+        np.add.at(state["skipped"], idx[~ok], 1)
+        if state["skipped"].sum() > max_skip_fraction * stop:
+            raise ValueError(
+                f"{int(state['skipped'].sum())} of the first {stop:,} cells could not be "
+                "recovered as integer counts; refusing to continue"
+            )
+        if moments_of is not None and (in_moments[row:stop] & ok).any():
+            sel = in_moments[row:stop] & ok
             v = np.log1p(block[sel] / totals[sel] * 1e4)
             for t_i in np.unique(type_index[row:stop][sel]):
                 rows_t = type_index[row:stop][sel] == t_i
@@ -145,7 +184,11 @@ def pseudobulk(
             np.savez(checkpoint, next_row=stop, **state)
         if (i + 1) % log_every == 0 or last:
             rate = (stop - start) / (time.time() - began)
-            print(f"  {stop:,}/{n:,} cells, {(n - stop) / rate / 60:.0f} min left", flush=True)
+            print(
+                f"  {stop:,}/{n:,} cells, {(n - stop) / rate / 60:.0f} min left, "
+                f"{int(state['skipped'].sum())} skipped",
+                flush=True,
+            )
 
     labels = [g.split("|", 1) for g in groups]
     out = ad.AnnData(
@@ -153,7 +196,8 @@ def pseudobulk(
             {
                 "cell_type": [c for c, _ in labels],
                 "perturbation": [p for _, p in labels],
-                "n_cells": np.bincount(inverse, minlength=len(groups)),
+                "n_cells": np.bincount(inverse, minlength=len(groups)) - state["skipped"],
+                "n_skipped": state["skipped"],
             },
             index=list(groups),
         ),

@@ -40,7 +40,7 @@ def main() -> None:
             pert_col="gene",
             cell_type_col="cell_line",
             checkpoint=CHECKPOINT,
-            checkpoint_every=25,
+            checkpoint_every=10,
             moments_of="non-targeting",
         )
     bulk.uns["source"] = {"url": URL, "repo": REPO, "file": FILE, "revision": REVISION}

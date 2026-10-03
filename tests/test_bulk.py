@@ -102,3 +102,25 @@ def test_control_moments_match_a_direct_computation(tmp_path):
         assert m["n"] == mask.sum()
         assert np.allclose(m["sum"], v[mask].sum(0))
         assert np.allclose(m["outer"], v[mask].T @ v[mask])
+
+
+def test_recover_counts_handles_cells_without_a_count_of_one():
+    from baseline_first.data.bulk import recover_counts
+
+    counts = np.array([[2.0, 4.0, 6.0, 0.0], [1.0, 3.0, 0.0, 5.0], [3.0, 3.0, 9.0, 0.0]])
+    stored = np.log1p(counts * np.array([[1.7], [2.3], [0.9]]))
+    recovered, ok = recover_counts(stored)
+    assert ok.all()
+    # Without a count of 1 the scale is only identified up to a common factor:
+    # the smallest consistent counts (the gcd reading) come back.
+    assert np.array_equal(recovered[1], counts[1])
+    assert np.array_equal(recovered[0], counts[0] / 2)
+    assert np.array_equal(recovered[2], counts[2] / 3)
+
+
+def test_recover_counts_flags_unrecoverable_cells():
+    from baseline_first.data.bulk import recover_counts
+
+    block = np.log1p(np.array([[1.0, 2.0, 3.0], [1.0, 1.37, 2.71]]))
+    _, ok = recover_counts(block)
+    assert ok.tolist() == [True, False]
