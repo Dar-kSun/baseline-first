@@ -24,6 +24,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
 data = ["pertpy", "scanpy"]
+# The official Virtual Cell Challenge 2026 scorer, pinned: scores are only comparable
+# within one scorer version. Needs Python >= 3.11.
+vcc = ["cell-eval2==0.18.0"]
 
 [project.scripts]
 baseline-first = "baseline_first.cli:app"
