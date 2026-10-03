@@ -56,7 +56,28 @@ perturbations are included, and 6 of the singles carry both raw label forms.
 Genes are the measured targets plus the most variable remaining genes in the
 subset. 314 KB.
 
+## Virtual Cell Challenge 2026: validation controls
+
+| | |
+|---|---|
+| Source | `vcc datasets download controls` (vcc-cli 0.2.2), requires a registered challenge account |
+| Archive | `vcc_2026_controls.zip`, 662,118,680 bytes, md5 `369f9ec7922c6201a98b49a44b452d98`; the CLI verified its crc32c |
+| Panel | `vcc2026-val-1`, partition `val`, contexts A, B, C |
+| Contents | `context_{A,B,C}.h5ad` (18,400 non-targeting cells each: 46 guides x 400 cells), `gene_names.csv` (18,533 genes, with a `gene_name` header), `pert_counts.csv` (the 300 target genes, same for all contexts), `manifest.json` |
+| Values | raw integer counts (stored as float32), median about 20,000 UMI per cell |
+| Downloaded | 2026-10-04 |
+| Redistribution | Challenge data: not committed, not redistributed |
+
+Per `manifest.json`, each context's reference holds 138,400 cells: these 18,400
+controls plus 300 x 400 perturbed cells. The control cells are therefore the
+same cells the scorer uses as the reference origin.
+
+Marker genes hint at the cell types (an observation, not an identification):
+A expresses CD3E (T-cell-like), B is VIM-high with COL1A1 (mesenchymal-like),
+C expresses KRT5, TP63 and SOX2 (squamous-epithelial-like). Mean log-CPM
+profiles correlate 0.75 to 0.84 between contexts.
+
 ## Not yet added
 
-Replogle 2022, the Arc Virtual Cell Challenge training data and a Tabula
+Replogle 2022 and a Tabula
 Sapiens subset (see `CLAUDE.md` §3) will be added here as their loaders land.
