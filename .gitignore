@@ -1,0 +1,27 @@
+# Environments
+/.venv
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Data: raw downloads are cached locally, never committed.
+# The small fixture under tests/fixtures/ is the only data in git.
+data/raw/
+data/processed/
+*.h5ad
+!tests/fixtures/*.h5ad
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
