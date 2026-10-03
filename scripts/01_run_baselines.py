@@ -84,6 +84,10 @@ def main() -> None:
 
     out = args.out / args.dataset
     out.mkdir(parents=True, exist_ok=True)
+    # Timings vary run to run, so they go in run.json and the CSVs stay byte-reproducible.
+    seconds = results.groupby(["baseline", "fold"])["fit_predict_seconds"].first()
+    timing = seconds.groupby("baseline").sum().round(1).to_dict()
+    results = results.drop(columns="fit_predict_seconds")
     results.to_csv(out / "per_perturbation.csv", index=False, float_format="%.6g")
     summary.to_csv(out / "summary.csv", index=False, float_format="%.6g")
     table = to_markdown(summary)
@@ -103,6 +107,7 @@ def main() -> None:
         "git_commit": commit,
         "python": sys.version.split()[0],
         "packages": {p: version(p) for p in PACKAGES},
+        "fit_predict_seconds_total": timing,
         "source": adata.uns["baseline_first"],
     }
     (out / "run.json").write_text(json.dumps(run, indent=2, default=str) + "\n")

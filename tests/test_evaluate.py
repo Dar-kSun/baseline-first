@@ -31,7 +31,8 @@ def test_every_perturbation_is_scored_once_per_baseline(mini, results):
 
 def test_summary_has_cis_for_each_subset(results):
     summary = summarise(results, n_boot=200)
-    assert set(summary["subset"]) == {"all", "single", "pair"}
+    assert {"all", "single", "pair"} <= set(summary["subset"])
+    assert any(s.startswith("pair_") and s.endswith("_singles_seen") for s in summary["subset"])
     assert (summary["ci_low"] <= summary["mean"]).all()
     assert (summary["mean"] <= summary["ci_high"]).all()
 

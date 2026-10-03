@@ -121,6 +121,11 @@ def summarise(results: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> pd.Da
         "single": results[results["n_targets"] == 1],
         "pair": results[results["n_targets"] == 2],
     }
+    # Pairs split by how many of their single perturbations were in training: a pair
+    # whose singles were both seen is a much easier prediction than one whose weren't.
+    pairs = subsets["pair"]
+    for n in sorted(pairs["n_constituents_in_train"].unique()):
+        subsets[f"pair_{n}_singles_seen"] = pairs[pairs["n_constituents_in_train"] == n]
     rows = []
     for subset, frame in subsets.items():
         wide = {m: frame.pivot(index=KEY, columns="baseline", values=m) for m in METRICS}
