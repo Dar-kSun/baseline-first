@@ -79,3 +79,26 @@ def test_pseudobulk_resumes_from_checkpoint(tmp_path):
 
     assert np.allclose(resumed.layers["counts_sum"], full.layers["counts_sum"])
     assert np.allclose(resumed.layers["cpm_sum"], full.layers["cpm_sum"], rtol=1e-5)
+
+
+def test_control_moments_match_a_direct_computation(tmp_path):
+    counts = counts_matrix(n_cells=60)
+    obs = pd.DataFrame(
+        {
+            "gene": np.repeat(["A", "non-targeting", "non-targeting"], 20),
+            "line": np.tile(["x", "y"], 30),
+        },
+        index=[f"c{i}" for i in range(60)],
+    )
+    path = tmp_path / "cells.h5ad"
+    ad.AnnData(X=counts.astype(np.float32), obs=obs).write_h5ad(path)
+    with h5py.File(path, "r") as h5:
+        bulk = pseudobulk(h5, "gene", "line", chunk=7, moments_of="non-targeting")
+
+    v = np.log1p(counts / counts.sum(1, keepdims=True) * 1e4)
+    for line in ["x", "y"]:
+        mask = ((obs["gene"] == "non-targeting") & (obs["line"] == line)).to_numpy()
+        m = bulk.uns["moments"][line]
+        assert m["n"] == mask.sum()
+        assert np.allclose(m["sum"], v[mask].sum(0))
+        assert np.allclose(m["outer"], v[mask].T @ v[mask])

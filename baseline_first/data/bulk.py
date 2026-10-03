@@ -81,12 +81,20 @@ def pseudobulk(
     checkpoint: Path | None = None,
     chunk: int = CHUNK,
     log_every: int = 10,
+    checkpoint_every: int = 10,
+    moments_of: str | None = None,
 ) -> ad.AnnData:
     """Sum cells per (cell type, perturbation) group.
 
-    With `checkpoint`, partial sums are saved every `log_every` chunks and a
-    rerun resumes from the last saved row, so a long network read survives
-    interruption.
+    With `checkpoint`, partial sums are saved every `checkpoint_every` chunks
+    and a rerun resumes from the last saved row, so a long network read
+    survives interruption.
+
+    With `moments_of` (a perturbation label, normally the control), the cells
+    carrying that label are also summarised per cell type as first and second
+    moments of v = log1p(1e4 * counts / total), from which gene-gene
+    covariances follow. They are stored in ``uns["moments"][cell_type]`` as
+    ``n`` (cells), ``sum`` (genes) and ``outer`` (genes x genes, sum of v v^T).
     """
     obs, X = h5["obs"], h5["X"]
     perts = read_column(obs, pert_col)
@@ -97,26 +105,45 @@ def pseudobulk(
     genes = read_column(var, var.attrs.get("_index", "_index"))
     keys = pd.Series(cell_types).astype(str) + "|" + pd.Series(perts).astype(str)
     groups, inverse = np.unique(keys.to_numpy(), return_inverse=True)
+    types = sorted(set(map(str, cell_types)))
+    type_index = pd.Index(types).get_indexer(pd.Series(cell_types).astype(str))
+    in_moments = (perts == moments_of) if moments_of is not None else np.zeros(len(perts), bool)
 
-    counts = np.zeros((len(groups), len(genes)))
-    cpm = np.zeros_like(counts)
+    state = {
+        "counts": np.zeros((len(groups), len(genes))),
+        "cpm": np.zeros((len(groups), len(genes))),
+    }
+    if moments_of is not None:
+        state["m_n"] = np.zeros(len(types))
+        state["m_sum"] = np.zeros((len(types), len(genes)))
+        state["m_outer"] = np.zeros((len(types), len(genes), len(genes)))
     start = 0
     if checkpoint is not None and checkpoint.exists():
         saved = np.load(checkpoint)
-        counts, cpm, start = saved["counts"], saved["cpm"], int(saved["next_row"])
+        state = {k: saved[k] for k in state}
+        start = int(saved["next_row"])
         print(f"resuming at row {start:,}")
 
     n, began = len(perts), time.time()
     for i, row in enumerate(range(start, n, chunk)):
         stop = min(row + chunk, n)
         block = to_counts(read_rows(X, row, stop))
-        totals = block.sum(axis=1, keepdims=True)
+        totals = np.where((t := block.sum(axis=1, keepdims=True)) > 0, t, 1)
         idx = inverse[row:stop]
-        np.add.at(counts, idx, block)
-        np.add.at(cpm, idx, block / np.where(totals > 0, totals, 1) * 1e6)
-        if (i + 1) % log_every == 0 or stop == n:
-            if checkpoint is not None:
-                np.savez(checkpoint, counts=counts, cpm=cpm, next_row=stop)
+        np.add.at(state["counts"], idx, block)
+        np.add.at(state["cpm"], idx, block / totals * 1e6)
+        if moments_of is not None and in_moments[row:stop].any():
+            sel = in_moments[row:stop]
+            v = np.log1p(block[sel] / totals[sel] * 1e4)
+            for t_i in np.unique(type_index[row:stop][sel]):
+                rows_t = type_index[row:stop][sel] == t_i
+                state["m_n"][t_i] += rows_t.sum()
+                state["m_sum"][t_i] += v[rows_t].sum(axis=0)
+                state["m_outer"][t_i] += v[rows_t].T @ v[rows_t]
+        last = stop == n
+        if checkpoint is not None and ((i + 1) % checkpoint_every == 0 or last):
+            np.savez(checkpoint, next_row=stop, **state)
+        if (i + 1) % log_every == 0 or last:
             rate = (stop - start) / (time.time() - began)
             print(f"  {stop:,}/{n:,} cells, {(n - stop) / rate / 60:.0f} min left", flush=True)
 
@@ -132,6 +159,16 @@ def pseudobulk(
         ),
         var=pd.DataFrame(index=pd.Index(genes, name="gene_name")),
     )
-    out.layers["counts_sum"] = counts.astype(np.float32)
-    out.layers["cpm_sum"] = cpm.astype(np.float32)
+    out.layers["counts_sum"] = state["counts"].astype(np.float32)
+    out.layers["cpm_sum"] = state["cpm"].astype(np.float32)
+    if moments_of is not None:
+        out.uns["moments_of"] = moments_of
+        out.uns["moments"] = {
+            t: {
+                "n": float(state["m_n"][k]),
+                "sum": state["m_sum"][k],
+                "outer": state["m_outer"][k],
+            }
+            for k, t in enumerate(types)
+        }
     return out

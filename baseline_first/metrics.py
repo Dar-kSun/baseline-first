@@ -39,6 +39,31 @@ def pearson_delta(pred: np.ndarray, true: np.ndarray, control: np.ndarray) -> np
         return np.where(denom > 0, (a * b).sum(axis=1) / denom, np.nan)
 
 
+def pds_cosine(pred_delta: np.ndarray, true_delta: np.ndarray) -> np.ndarray:
+    """Perturbation discrimination score per perturbation (VCC 2026 `pds_cosine`).
+
+    Row p of each matrix is perturbation p's effect (profile minus control),
+    with every panel target gene already removed from the columns. For each p,
+    the predicted effect is compared with every observed effect by cosine
+    distance; the score is ``1 - k / (n - 1)``, where k counts observed effects
+    strictly closer than p's own plus half of the other ties (midrank). A zero
+    vector is at distance 1 from everything. 0.5 means no information.
+    Definition: cell-eval2 docs/vcc2026_metrics/vcc2026-metrics-brief.md, section 1.
+    """
+    pred = np.asarray(pred_delta, dtype=float)
+    true = np.asarray(true_delta, dtype=float)
+    n = len(true)
+    pred_norm = np.linalg.norm(pred, axis=1)
+    true_norm = np.linalg.norm(true, axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        cosine = (pred @ true.T) / np.outer(pred_norm, true_norm)
+    distance = np.where(np.outer(pred_norm > 0, true_norm > 0), 1 - cosine, 1.0)
+    own = np.diag(distance)[:, None]
+    closer = (distance < own).sum(axis=1)
+    ties = (distance == own).sum(axis=1) - 1
+    return 1 - (closer + ties / 2) / (n - 1)
+
+
 def scaled_score_ci(
     model,
     floor,

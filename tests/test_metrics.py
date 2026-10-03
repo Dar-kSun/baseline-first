@@ -66,3 +66,20 @@ def test_scaled_score_maps_floor_to_0_and_ceiling_to_1():
 def test_scaled_score_goes_negative_below_the_floor():
     score, _, _ = metrics.scaled_score_ci([7.0], [5.0], [1.0], higher_is_better=False)
     assert score == pytest.approx(-0.5)
+
+
+def test_pds_is_1_for_a_perfect_prediction_and_0_for_the_worst():
+    true = np.eye(5) + 0.01
+    assert np.allclose(metrics.pds_cosine(true, true), 1.0)
+    # Predicting each perturbation as exactly opposite to its own effect ranks it last.
+    worst = metrics.pds_cosine(-true, true)
+    assert np.all(worst < 0.3)
+
+
+def test_pds_is_exactly_one_half_for_a_shared_profile_or_zero_effect():
+    """The spec's anchors: one profile for every perturbation, or no effect, score 0.5."""
+    rng = np.random.default_rng(0)
+    true = rng.normal(size=(20, 30))
+    shared = np.tile(rng.normal(size=30), (20, 1))
+    assert metrics.pds_cosine(shared, true).mean() == pytest.approx(0.5, abs=1e-12)
+    assert np.allclose(metrics.pds_cosine(np.zeros((20, 30)), true), 0.5)

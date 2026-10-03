@@ -9,7 +9,8 @@ HTTP in row chunks and never stored. It takes about 100 minutes; partial sums
 are checkpointed, so an interrupted run resumes where it stopped.
 
 Output: data/processed/replogle_nadig_pseudobulk.h5ad, laid out as described
-in `baseline_first.data.bulk`.
+in `baseline_first.data.bulk`, including gene-gene moments of each cell
+line's control cells (uns["moments"]) for co-expression features.
 """
 
 from __future__ import annotations
@@ -34,7 +35,14 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     remote = fsspec.open(URL, block_size=32 * 2**20, cache_type="readahead").open()
     with h5py.File(remote, "r") as h5:
-        bulk = pseudobulk(h5, pert_col="gene", cell_type_col="cell_line", checkpoint=CHECKPOINT)
+        bulk = pseudobulk(
+            h5,
+            pert_col="gene",
+            cell_type_col="cell_line",
+            checkpoint=CHECKPOINT,
+            checkpoint_every=25,
+            moments_of="non-targeting",
+        )
     bulk.uns["source"] = {"url": URL, "repo": REPO, "file": FILE, "revision": REVISION}
     bulk.write_h5ad(OUT, compression="gzip")
     CHECKPOINT.unlink(missing_ok=True)
