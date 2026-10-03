@@ -111,6 +111,7 @@ def pseudobulk(
     checkpoint_every: int = 10,
     moments_of: str | None = None,
     max_skip_fraction: float = 0.01,
+    moments_genes: list[str] | None = None,
 ) -> ad.AnnData:
     """Sum cells per (cell type, perturbation) group.
 
@@ -123,6 +124,9 @@ def pseudobulk(
     moments of v = log1p(1e4 * counts / total), from which gene-gene
     covariances follow. They are stored in ``uns["moments"][cell_type]`` as
     ``n`` (cells), ``sum`` (genes) and ``outer`` (genes x genes, sum of v v^T).
+
+    `moments_genes` restricts the moments to those genes (in that order), which
+    keeps memory at their count squared; v is still normalised over all genes.
 
     Cells whose counts cannot be recovered exactly (see `recover_counts`) are
     left out of every sum and counted in ``obs["n_skipped"]``; more than
@@ -140,6 +144,12 @@ def pseudobulk(
     types = sorted(set(map(str, cell_types)))
     type_index = pd.Index(types).get_indexer(pd.Series(cell_types).astype(str))
     in_moments = (perts == moments_of) if moments_of is not None else np.zeros(len(perts), bool)
+    if moments_genes is None:
+        m_idx = np.arange(len(genes))
+    else:
+        m_idx = pd.Index(genes).get_indexer(moments_genes)
+        if (m_idx < 0).any():
+            raise ValueError(f"{int((m_idx < 0).sum())} moments_genes are not in this file")
 
     state = {
         "counts": np.zeros((len(groups), len(genes))),
@@ -148,8 +158,8 @@ def pseudobulk(
     }
     if moments_of is not None:
         state["m_n"] = np.zeros(len(types))
-        state["m_sum"] = np.zeros((len(types), len(genes)))
-        state["m_outer"] = np.zeros((len(types), len(genes), len(genes)))
+        state["m_sum"] = np.zeros((len(types), len(m_idx)))
+        state["m_outer"] = np.zeros((len(types), len(m_idx), len(m_idx)))
     start = 0
     if checkpoint is not None and checkpoint.exists():
         saved = np.load(checkpoint)
@@ -173,7 +183,7 @@ def pseudobulk(
             )
         if moments_of is not None and (in_moments[row:stop] & ok).any():
             sel = in_moments[row:stop] & ok
-            v = np.log1p(block[sel] / totals[sel] * 1e4)
+            v = np.log1p(block[sel] / totals[sel] * 1e4)[:, m_idx]
             for t_i in np.unique(type_index[row:stop][sel]):
                 rows_t = type_index[row:stop][sel] == t_i
                 state["m_n"][t_i] += rows_t.sum()
@@ -207,6 +217,7 @@ def pseudobulk(
     out.layers["cpm_sum"] = state["cpm"].astype(np.float32)
     if moments_of is not None:
         out.uns["moments_of"] = moments_of
+        out.uns["moments_genes"] = np.asarray(genes)[m_idx].astype(str)
         out.uns["moments"] = {
             t: {
                 "n": float(state["m_n"][k]),

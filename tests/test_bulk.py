@@ -124,3 +124,18 @@ def test_recover_counts_flags_unrecoverable_cells():
     block = np.log1p(np.array([[1.0, 2.0, 3.0], [1.0, 1.37, 2.71]]))
     _, ok = recover_counts(block)
     assert ok.tolist() == [True, False]
+
+
+def test_moments_can_be_restricted_to_a_gene_subset(tmp_path):
+    counts = counts_matrix(n_cells=40)
+    obs = pd.DataFrame({"gene": ["non-targeting"] * 40}, index=[f"c{i}" for i in range(40)])
+    var = pd.DataFrame(index=[f"g{i}" for i in range(8)])
+    path = tmp_path / "cells.h5ad"
+    ad.AnnData(X=counts.astype(np.float32), obs=obs, var=var).write_h5ad(path)
+    subset = ["g5", "g1", "g2"]
+    with h5py.File(path, "r") as h5:
+        bulk = pseudobulk(h5, "gene", moments_of="non-targeting", moments_genes=subset)
+    v = np.log1p(counts / counts.sum(1, keepdims=True) * 1e4)[:, [5, 1, 2]]
+    m = bulk.uns["moments"][""]
+    assert list(bulk.uns["moments_genes"]) == subset
+    assert np.allclose(m["outer"], v.T @ v)

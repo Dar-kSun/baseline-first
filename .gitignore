@@ -28,3 +28,6 @@ Thumbs.db
 
 # Local screenshots and notes in the repo root (results figures live in results/)
 /*.png
+
+# Overnight run logs
+logs/

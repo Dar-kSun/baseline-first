@@ -24,7 +24,7 @@ from pathlib import Path
 import fsspec
 import h5py
 
-from baseline_first.data.bulk import pseudobulk
+from baseline_first.data.bulk import pseudobulk, read_column
 
 URL = "https://storage.googleapis.com/vcc_data_prod/datasets/state/competition_support_set.zip"
 MEMBERS = ["k562_gwps", "k562", "rpe1", "jurkat", "hepg2", "competition_train"]
@@ -50,8 +50,12 @@ def main() -> None:
     parser.add_argument("member", choices=MEMBERS)
     parser.add_argument("--pert-col", default="target_gene")
     parser.add_argument("--keep", action="store_true", help="keep the extracted file")
+    parser.add_argument("--cell-type", help="label for files without a cell_type column")
+    parser.add_argument("--moments-of", help="also store control-cell moments for this label")
+    parser.add_argument("--moments-genes", type=Path, help="text file of genes for the moments")
     args = parser.parse_args()
 
+    OUT.mkdir(parents=True, exist_ok=True)
     path = extract(args.member)
     md5 = hashlib.md5()
     with open(path, "rb") as f:
@@ -59,17 +63,36 @@ def main() -> None:
             md5.update(chunk)
     with h5py.File(path, "r") as h5:
         cell_type_col = "cell_type" if "cell_type" in h5["obs"] else None
-        bulk = pseudobulk(h5, args.pert_col, cell_type_col)
+        moments_genes = (
+            args.moments_genes.read_text().split() if args.moments_genes is not None else None
+        )
+        if moments_genes is not None:
+            var = h5["var"]
+            present = set(read_column(var, var.attrs.get("_index", "_index")))
+            moments_genes = [g for g in moments_genes if g in present]
+        bulk = pseudobulk(
+            h5,
+            args.pert_col,
+            cell_type_col,
+            checkpoint=OUT / f"{args.member}.partial.npz",
+            moments_of=args.moments_of,
+            moments_genes=moments_genes,
+        )
+    if args.cell_type and cell_type_col is None:
+        bulk.obs["cell_type"] = args.cell_type
+        bulk.obs.index = args.cell_type + bulk.obs.index.astype(str)
+        if "moments" in bulk.uns:
+            bulk.uns["moments"] = {args.cell_type: bulk.uns["moments"][""]}
     bulk.uns["source"] = {
         "url": URL,
         "member": f"competition_support_set/{args.member}.h5",
         "member_md5": md5.hexdigest(),
         "script": "scripts/10_pseudobulk_support_set.py",
     }
-    OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{args.member}_pseudobulk.h5ad"
     bulk.write_h5ad(out, compression="gzip")
     print(f"wrote {out}: {bulk.n_obs} groups x {bulk.n_vars} genes, md5 {md5.hexdigest()}")
+    (OUT / f"{args.member}.partial.npz").unlink(missing_ok=True)
     if not args.keep:
         path.unlink()
 
