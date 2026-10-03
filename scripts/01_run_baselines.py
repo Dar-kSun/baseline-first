@@ -72,6 +72,7 @@ def main() -> None:
     parser.add_argument("--k", type=int, default=4096, help="HVGRidge: number of HVGs")
     parser.add_argument("--out", type=Path, default=Path("results"))
     args = parser.parse_args()
+    commit = git_commit()  # before any output is written, which would mark the tree dirty
 
     adata = LOADERS[args.dataset]()
     for layer in [name for name in adata.layers if name is not None]:
@@ -99,7 +100,7 @@ def main() -> None:
         "ci": "95% percentile bootstrap over perturbations, 2000 resamples",
         "observed_profile": "half B of each held-out perturbation's cells (random split)",
         "replicate_ceiling": "mean of half A, scored against half B",
-        "git_commit": git_commit(),
+        "git_commit": commit,
         "python": sys.version.split()[0],
         "packages": {p: version(p) for p in PACKAGES},
         "source": adata.uns["baseline_first"],
