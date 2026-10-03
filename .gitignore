@@ -25,3 +25,6 @@ data/processed/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local screenshots and notes in the repo root (results figures live in results/)
+/*.png
