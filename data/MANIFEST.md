@@ -69,8 +69,9 @@ subset. 314 KB.
 | Redistribution | Challenge data: not committed, not redistributed |
 
 Per `manifest.json`, each context's reference holds 138,400 cells: these 18,400
-controls plus 300 x 400 perturbed cells. The control cells are therefore the
-same cells the scorer uses as the reference origin.
+controls plus 300 x 400 perturbed cells. That is consistent with these control
+cells being the ones the scorer uses as the reference origin (inferred from
+the counts, not stated by the challenge).
 
 Marker genes hint at the cell types (an observation, not an identification):
 A expresses CD3E (T-cell-like), B is VIM-high with COL1A1 (mesenchymal-like),
