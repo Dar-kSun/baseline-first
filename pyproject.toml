@@ -26,7 +26,7 @@ dev = ["pytest>=8", "ruff>=0.6"]
 data = ["pertpy", "scanpy"]
 # The official Virtual Cell Challenge 2026 scorer, pinned: scores are only comparable
 # within one scorer version. Needs Python >= 3.11.
-vcc = ["cell-eval2==0.18.0"]
+vcc = ["cell-eval2==0.18.0", "pdex==0.3.0"]  # pdex: the CPU DE engine cell-eval2 pins
 
 [project.scripts]
 baseline-first = "baseline_first.cli:app"
