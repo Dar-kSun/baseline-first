@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "baseline-first"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Run the dumb baseline before you train the big model: honest baselines, leakage-proof splits and effective sample size for single-cell perturbation data."
 readme = "README.md"
 license = "MIT"
