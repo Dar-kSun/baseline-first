@@ -174,3 +174,33 @@ other lines **and** the other folds, with `assert_no_leakage` on both keys.
    than the context's own mean (the VCC 0 point), which no zero-shot method
    can see. A zero-shot submission should therefore be expected to score
    below 0 on expression error and only slightly above 0 on discrimination.
+
+## Shrinkage, and H1 as a fifth cell line
+
+**Command:** `python scripts/14_transfer_with_shrinkage.py` →
+`results/transfer_with_shrinkage/` (commit `2203017`, clean). Same design as
+above, with H1 (VCC 2025, CRISPRi, 10x Flex) added and all lines restricted to
+the 6,118 genes the two sources share. Each method also has a version scaled
+by one factor, fitted on held-out training lines and a gene fold outside the
+test fold (factors 0.62–0.74).
+
+| held out | ridge PDS [95% CI] | error ratio: ridge / ridge+shrink / mean / mean+shrink / no change / ContextMean* |
+|---|---|---|
+| **H1** | **0.490** [0.440, 0.542] | **1.878 / 1.408 / 1.545 / 1.204** / 1.000 / 0.950 |
+| HepG2 | 0.521 [0.505, 0.536] | 0.911 / 0.935 / 0.901 / 0.941 / 1.000 / 0.851 |
+| Jurkat | 0.522 [0.508, 0.537] | 1.062 / 1.003 / 1.074 / 1.010 / 1.000 / 0.934 |
+| K562 | 0.524 [0.508, 0.539] | 1.076 / 1.001 / 1.105 / 1.016 / 1.000 / 0.945 |
+| RPE1 | 0.512 [0.497, 0.527] | 0.880 / 0.919 / 0.898 / 0.932 / 1.000 / 0.725 |
+
+- **H1 is the closest public analogue of a VCC 2026 context** (CRISPRi on 10x
+  Flex, a cell type unlike the training lines, mostly non-essential targets).
+  There, co-expression carries no detectable gene-specific signal and every
+  transferred prediction has more expression error than predicting no change;
+  shrinkage reduces but does not remove the excess.
+- Shrinkage helps exactly where transferred effects overshoot (H1, Jurkat,
+  K562) and costs a little where they do not (HepG2, RPE1). One global factor
+  cannot do both.
+- These are pseudobulk metrics. The VCC's four differential-expression metrics
+  behave differently (a prediction calling no significant genes scores 0 on
+  direction fidelity, about −1.7 on the scaled score), so they are measured
+  directly in the next section.
