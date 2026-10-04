@@ -1,6 +1,6 @@
 """Run the long data and benchmark steps unattended, with retries and a log.
 
-    python scripts/overnight.py
+    python scripts/overnight.py [STEP ...] [--after-pid PID]
 
 Steps, in order:
   1. stream    scripts/11_pseudobulk_replogle_nadig.py  (resumes from its checkpoint)
@@ -8,6 +8,9 @@ Steps, in order:
   3. h1        scripts/10_pseudobulk_support_set.py competition_train, the 2025
                H1 CRISPRi data, with control moments on the step-1 gene list
   4. tests     pytest, as a final check that the code is intact
+
+Optional steps, run only when named: shrinkage (scripts/14),
+submission-ridge and submission-mean (scripts/20; build files, never submit).
 
 A failed step is retried (steps 1 and 3 resume or restart cleanly); a step
 whose prerequisite failed is skipped. Output goes to logs/overnight.log and a
@@ -17,6 +20,7 @@ to sleep; the request ends with the process.
 
 from __future__ import annotations
 
+import argparse
 import ctypes
 import json
 import os
@@ -31,6 +35,7 @@ LOGS = ROOT / "logs"
 LOG = LOGS / "overnight.log"
 STATUS = LOGS / "overnight-status.json"
 PY = sys.executable
+SUBMIT = "scripts/20_make_vcc_submission.py"
 
 STEPS = [
     ("stream", [PY, "-u", "scripts/11_pseudobulk_replogle_nadig.py"], 6, None),
@@ -53,7 +58,11 @@ STEPS = [
         None,
     ),
     ("tests", [PY, "-m", "pytest", "-q"], 1, None),
+    ("shrinkage", [PY, "-u", "scripts/14_transfer_with_shrinkage.py"], 2, None),
+    ("submission-ridge", [PY, "-u", SUBMIT, "--method", "ridge"], 2, None),
+    ("submission-mean", [PY, "-u", SUBMIT, "--method", "mean"], 2, None),
 ]
+DEFAULT = ["stream", "benchmark", "h1", "tests"]
 
 
 def keep_awake() -> None:
@@ -72,13 +81,40 @@ def write_status(status: dict) -> None:
     STATUS.write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
 
 
+def wait_for(pid: int) -> None:
+    """Block until process `pid` has exited (Windows and POSIX)."""
+    while True:
+        if os.name == "nt":
+            out = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True
+            ).stdout
+            if str(pid) not in out:
+                return
+        else:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                return
+        time.sleep(30)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("steps", nargs="*", default=DEFAULT, help="steps to run, in order")
+    parser.add_argument("--after-pid", type=int, help="wait for this process to exit first")
+    args = parser.parse_args()
+    unknown = set(args.steps) - {name for name, *_ in STEPS}
+    if unknown:
+        parser.error(f"unknown steps: {sorted(unknown)}")
     LOGS.mkdir(exist_ok=True)
     keep_awake()
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     status = {"started": f"{datetime.now():%Y-%m-%d %H:%M:%S}", "pid": os.getpid(), "steps": {}}
-    log(f"overnight run started (pid {os.getpid()})")
-    for name, cmd, attempts, needs in STEPS:
+    if args.after_pid:
+        log(f"waiting for pid {args.after_pid} to exit")
+        wait_for(args.after_pid)
+    log(f"run started (pid {os.getpid()}): {' '.join(args.steps)}")
+    for name, cmd, attempts, needs in [step for step in STEPS if step[0] in args.steps]:
         if needs and status["steps"].get(needs, {}).get("result") != "ok":
             status["steps"][name] = {"result": f"skipped: {needs} did not succeed"}
             log(f"{name}: skipped because {needs} did not succeed")
