@@ -224,8 +224,19 @@ def main() -> None:
         fc = fold_changes(model.predict(method, ctx_moments, panel), controls, genes_all)
         pred_path = CACHE / f"{tag}.h5ad"
         write_submission(pred_path, genes_all, {"H1": (controls, fc)}, seed=SEED, depth=depth)
-        pred = ad.read_h5ad(pred_path)
-        pred.X = pred.X.astype(np.float32)
+        # The scorer requires the same labels on both sides, control included. Under the
+        # vcc2026 preset (control_source=real) the control cells are taken from the real
+        # side regardless, so the reference's own controls are appended unchanged.
+        perturbed = ad.read_h5ad(pred_path)
+        ctrl = ref[ref.obs["target_gene"] == CONTROL]
+        pred = ad.AnnData(
+            X=sp.vstack([perturbed.X.astype(np.float32), ctrl.X.astype(np.float32)]).tocsr(),
+            obs=pd.DataFrame(
+                {"target_gene": list(perturbed.obs["target_gene"]) + [CONTROL] * ctrl.n_obs},
+                index=[f"p{i}" for i in range(perturbed.n_obs + ctrl.n_obs)],
+            ),
+            var=pd.DataFrame(index=genes_all),
+        )
         log(f"{tag}: scoring")
         raw[tag] = wide_mean(compute_metrics(pred, ref, config=cfg), cfg)
         path.write_text(json.dumps(raw[tag], indent=2))
