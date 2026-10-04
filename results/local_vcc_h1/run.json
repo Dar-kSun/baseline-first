@@ -1,6 +1,6 @@
 {
   "command": "python scripts/15_local_vcc_score_h1.py",
-  "git_commit": "624c9bf2ecbed4fc75cf2a8242bf0549712185e9-dirty",
+  "git_commit": "edc560c3f0eb9ce8a8904920c5c413b8d34792b5-dirty",
   "reference": {
     "cells": 28000,
     "perturbations": 60,
