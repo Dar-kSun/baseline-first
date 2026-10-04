@@ -2,6 +2,7 @@ from pathlib import Path
 
 import anndata as ad
 import numpy as np
+import pandas as pd
 from typer.testing import CliRunner
 
 from baseline_first.cli import app
@@ -28,7 +29,10 @@ def write_split(tmp_path, leaky: bool) -> Path:
         split = np.where(np.arange(adata.n_obs) % 5 == 0, "test", "train")
     else:
         split = np.where(np.isin(perts, ["ETS2", "FOXF1+HOXB9"]), "test", "train")
-    adata.obs["split"] = split
+    adata.obs["split"] = pd.Categorical(split)
+    # Plain object strings: anndata < 0.11 (used on Python 3.10) cannot write
+    # the nullable string index newer anndata reads the fixture into.
+    adata.obs.index = pd.Index(adata.obs.index.to_numpy(dtype=object), name=None)
     path = tmp_path / "split.h5ad"
     adata.write_h5ad(path)
     return path
