@@ -31,3 +31,6 @@ Thumbs.db
 
 # Overnight run logs
 logs/
+
+# Local Claude Code settings (personal, per machine)
+.claude/
