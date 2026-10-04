@@ -182,7 +182,7 @@ other lines **and** the other folds, with `assert_no_leakage` on both keys.
 above, with H1 (VCC 2025, CRISPRi, 10x Flex) added and all lines restricted to
 the 6,118 genes the two sources share. Each method also has a version scaled
 by one factor, fitted on held-out training lines and a gene fold outside the
-test fold (factors 0.62–0.74).
+test fold (factors 0.36–0.76 across folds).
 
 | held out | ridge PDS [95% CI] | error ratio: ridge / ridge+shrink / mean / mean+shrink / no change / ContextMean* |
 |---|---|---|
