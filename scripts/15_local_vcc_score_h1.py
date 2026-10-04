@@ -53,7 +53,8 @@ CONTROL = "non-targeting"
 # with 8,000 controls needed ~12 GB).
 N_PERTS, CELLS_PER_PERT, N_CONTROLS, MEDIAN_UMI = 60, 400, 4000, 20_000
 SEED = 0
-RUNS = [("none", 1.0), ("mean", 1.0), ("ridge", 1.0), ("ridge", 0.3)]
+# ("none", 0.3) isolates what thinning alone does to the scores (no predicted effect at all).
+RUNS = [("none", 1.0), ("mean", 1.0), ("ridge", 1.0), ("ridge", 0.3), ("none", 0.3)]
 MEMBERS = [
     "pds_cosine",
     "expr_mse_unbiased_capped_norm",
