@@ -85,3 +85,92 @@ Full table, including RMSE: `results/norman2019/summary.md`.
 perturbations there is no test feature matrix (the only input is the
 perturbation's label), so baselines implement `fit(X, perturbations, genes)` /
 `predict(perturbations)`. See `baseline_first/baselines/base.py`.
+
+## M5: effective sample size
+
+**Command:** `python scripts/02_effective_n_survey.py` → `results/effective_n/`.
+Method, assumptions and failure modes: `docs/effective-n-method.md`.
+
+| dataset | cells | conditions | cells / condition | median ICC [IQR] | design-effect n_eff | cells / n_eff |
+|---|---|---|---|---|---|---|
+| Norman 2019 | 91,205 | 237 | **385x** | 0.015 [0.004, 0.045] | 13,678 | 6.7x |
+| VCC 2026 controls A, by guide (negative control) | 18,400 | 46 guides | – | 0.000 [0.000, 0.001] | 16,603 | 1.1x |
+
+A model of perturbation effects trained on Norman has 237 examples, not 91,205.
+The design effect answers a different question (independent cells for
+estimating gene means) and is far less dramatic, because single-cell noise
+keeps per-gene ICC low. The negative control behaves: non-targeting guides do
+not differ.
+
+## Virtual Cell Challenge 2026: what public training data covers
+
+Facts from the official challenge files and Arc's public data (sources and
+checksums in `data/MANIFEST.md`):
+
+- The task: predict single-cell responses to 300 CRISPRi knockdowns in each
+  of three new cell contexts (validation round), given only each context's
+  control cells. Scoring: six metrics from `cell-eval2`, each scaled so that
+  0 = the context's own mean perturbation response and 1 = a split-half
+  replicate of the real experiment.
+- **Coverage of the 300 targets by public perturbation data:**
+
+  | source | targets covered |
+  |---|---|
+  | Replogle 2022 + Nadig 2025 essential screens (K562, RPE1, HepG2, Jurkat; 2,024 genes) | 0 / 300 |
+  | Arc VCC 2025 support set, K562 genome-wide subset (184 perturbations) | 17 / 300 |
+  | VCC 2025 H1 training data (150 perturbations) | 13 / 300, all within the 17 |
+
+  So "look up the gene's effect elsewhere" is unavailable for 94% of targets.
+  Any method has to predict effects for genes that were never perturbed in
+  public data, in cell types it has never seen.
+
+## Does a gene's effect transfer to another cell type?
+
+**Command:** `python scripts/12_cross_context_transfer.py` →
+`results/cross_context/`. 53 perturbations measured in all of K562, RPE1,
+Jurkat and HepG2 (VCC 2025 support set). Each line is held out and predicted
+from the other three; the held-out line's controls are known. All 53 target
+genes are removed from every vector. The error ratio is
+sum‖pred − true‖² / sum‖true‖², without the finite-cell noise correction of
+the official metric (it needs single cells), so every method's error is
+overstated by the same noise term.
+
+| method | PDS (range over 4 held-out lines) | expression error ratio |
+|---|---|---|
+| NoChange | 0.50 | 1.00 |
+| MeanResponse (average effect in the other lines) | 0.50 | 0.95 – 1.03 |
+| SameGene (this gene's effect in the other lines) | **0.82 – 0.89** | 1.10 – 1.45 |
+| ContextMean* (VCC 0 point; reads the test line) | 0.50 | 0.85 – 0.95 |
+
+Which genes a knockdown moves is substantially conserved across these cell
+types: a gene's own effect elsewhere identifies the right perturbation 82–89%
+of the way. Its magnitude is not: unshrunk, it has more error than predicting
+no change. But this route exists for only 17 of the 300 VCC targets.
+
+## Unseen genes in an unseen cell type (the VCC setting, on public data)
+
+**Command:** `python scripts/13_unseen_gene_unseen_context.py` →
+`results/unseen_gene_unseen_context/`. Run overnight at commit `4166bb6`;
+`run.json` says `-dirty` only because an untracked local
+`.claude/settings.json` existed (no tracked file differed).
+
+Data: K562, RPE1, HepG2, Jurkat (643,413 cells streamed from Arc's
+harmonised file; 2 cells skipped as unrecoverable; 6,546 genes). Perturbed
+genes are split into 5 folds; testing fold F in line L trains only on the
+other lines **and** the other folds, with `assert_no_leakage` on both keys.
+
+| held out | n perts | CoexpressionRidge PDS [95% CI] | error ratio: ridge / MeanResponse / NoChange / ContextMean* |
+|---|---|---|---|
+| HepG2 | 1,340 | 0.531 [0.514, 0.546] | 0.901 / 0.902 / 1.000 / 0.853 |
+| Jurkat | 1,537 | 0.540 [0.526, 0.555] | 1.100 / 1.077 / 1.000 / 0.933 |
+| K562 | 1,383 | 0.538 [0.522, 0.553] | 1.147 / 1.110 / 1.000 / 0.944 |
+| RPE1 | 1,499 | 0.520 [0.504, 0.534] | 0.885 / 0.897 / 1.000 / 0.727 |
+
+1. Co-expression in the held-out cell type's own controls carries a weak but
+   real gene-specific signal: PDS 0.52–0.54, every CI above 0.5.
+2. It does not reduce expression error beyond the plain average response.
+3. The average response itself transfers poorly: worse than predicting no
+   change for Jurkat and K562, and every transfer method is clearly worse
+   than the context's own mean (the VCC 0 point), which no zero-shot method
+   can see. A zero-shot submission should therefore be expected to score
+   below 0 on expression error and only slightly above 0 on discrimination.
