@@ -45,3 +45,7 @@ select = ["E", "F", "W", "I", "B", "UP", "NPY"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff.lint.flake8-bugbear]
+# Typer declares CLI options as call defaults; they are evaluated once and immutable.
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
