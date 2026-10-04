@@ -93,6 +93,27 @@ close 5 November 2026, dates confirmed on the official site). **No submission
 has been made yet.** This section will state exactly what is entered, and its
 score once known; it will not imply a placement.
 
+**Local rehearsal with the official metrics.** The challenge's own scorer
+(`cell-eval2`, `vcc2026` preset) was run on a challenge-style reference built
+from the public VCC 2025 H1 data, with methods trained only on four other cell
+lines and never on the target genes
+(`python scripts/15_local_vcc_score_h1.py`). Overall scaled score (0 = the
+context's own mean response, 1 = a replicate experiment):
+
+| prediction | overall |
+|---|---|
+| no change | −0.02 |
+| average response from other cell lines | 0.06 |
+| co-expression ridge | 0.06 |
+| no change, but cells thinned to 30% of reads | **0.12** |
+
+Zero-shot transfer from public screens barely moves the score. And thinning
+the predicted cells' reads lifts even a prediction with no effect at all,
+because thinned cells produce spurious differential-expression calls against
+full-depth controls: a weakness of the metrics worth knowing about, not a
+better prediction. Details and caveats (the local anchors differ from the
+official ones on two metrics) are in [`docs/findings.md`](docs/findings.md).
+
 ## Limitations
 
 - **Datasets.** Baseline results are on one CRISPRa dataset (Norman 2019,
