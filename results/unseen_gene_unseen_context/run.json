@@ -1,0 +1,115 @@
+{
+  "command": "python scripts/13_unseen_gene_unseen_context.py",
+  "git_commit": "4166bb6aa5a875a00a7333ee738ecd686b0c1fce-dirty",
+  "folds": 5,
+  "anchors": 1000,
+  "seed": 0,
+  "ridge_alphas": [
+    {
+      "held_out": "hepg2",
+      "fold": 0,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 1,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 2,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 3,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 4,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 0,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 1,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 2,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 3,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 4,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "k562",
+      "fold": 0,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "k562",
+      "fold": 1,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "k562",
+      "fold": 2,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "k562",
+      "fold": 3,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "k562",
+      "fold": 4,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 0,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 1,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 2,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 3,
+      "alpha": 3.1622776601683795
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 4,
+      "alpha": 3.1622776601683795
+    }
+  ],
+  "source": {
+    "file": "replogle_concat.h5ad",
+    "repo": "arcinstitute/State-Replogle-Filtered",
+    "revision": "d790193bb2c93726541a75ca3fa873a92ed44da5",
+    "url": "https://huggingface.co/datasets/arcinstitute/State-Replogle-Filtered/resolve/d790193bb2c93726541a75ca3fa873a92ed44da5/replogle_concat.h5ad"
+  }
+}
