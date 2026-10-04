@@ -10,7 +10,7 @@
   "ci": "95% percentile bootstrap over perturbations, 2000 resamples",
   "observed_profile": "half B of each held-out perturbation's cells (random split)",
   "replicate_ceiling": "mean of half A, scored against half B",
-  "git_commit": "f0db08fa51c7ff4da4f23ac7d53d88633b365c3c",
+  "git_commit": "d8c68c0c7c22ea9e13a43c8a42908e99989a2010",
   "python": "3.13.14",
   "packages": {
     "baseline-first": "0.1.0.dev0",

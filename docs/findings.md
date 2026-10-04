@@ -150,7 +150,7 @@ no change. But this route exists for only 17 of the 300 VCC targets.
 ## Unseen genes in an unseen cell type (the VCC setting, on public data)
 
 **Command:** `python scripts/13_unseen_gene_unseen_context.py` →
-`results/unseen_gene_unseen_context/`. Run overnight at commit `4166bb6`;
+`results/unseen_gene_unseen_context/`. Run overnight at commit `f772ef2`;
 `run.json` says `-dirty` only because an untracked local
 `.claude/settings.json` existed (no tracked file differed).
 
@@ -178,7 +178,7 @@ other lines **and** the other folds, with `assert_no_leakage` on both keys.
 ## Shrinkage, and H1 as a fifth cell line
 
 **Command:** `python scripts/14_transfer_with_shrinkage.py` →
-`results/transfer_with_shrinkage/` (commit `2203017`, clean). Same design as
+`results/transfer_with_shrinkage/` (commit `f75bc3b`, clean). Same design as
 above, with H1 (VCC 2025, CRISPRi, 10x Flex) added and all lines restricted to
 the 6,118 genes the two sources share. Each method also has a version scaled
 by one factor, fitted on held-out training lines and a gene fold outside the

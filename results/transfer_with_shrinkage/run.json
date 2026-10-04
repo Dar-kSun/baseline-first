@@ -1,6 +1,6 @@
 {
   "command": "python scripts/14_transfer_with_shrinkage.py",
-  "git_commit": "22030176b173965bbe69c10fb47cd6a084e9195b",
+  "git_commit": "f75bc3b2a5e04250a9eaae81c93a12a32f50bf5e",
   "folds": 5,
   "anchors": 1000,
   "seed": 0,

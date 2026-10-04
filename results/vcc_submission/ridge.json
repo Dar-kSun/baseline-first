@@ -1,7 +1,7 @@
 {
   "model_name": "arV1-CoexprRidge",
   "method": "ridge",
-  "git_commit": "1b580efad31ad636075460fbadb26b19f24b68ab-dirty",
+  "git_commit": "8aedcaf2bd39b15f5c3528b6a4eb88e1d4845495-dirty",
   "training_lines": [
     "ARC_H1",
     "hepg2",
