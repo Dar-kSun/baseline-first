@@ -4,7 +4,7 @@
 
 H1 (the VCC 2025 CRISPRi data, 10x Flex) stands in for an unseen challenge
 context. The local reference mirrors how the 2026 challenge builds its own:
-a fixed random set of perturbations with 400 cells each, plus control cells,
+a fixed random set of 60 perturbations with 400 cells each, plus 4,000 control cells,
 downsampled to a median of 20,000 UMI per cell. Predictions are built from
 those same control cells, as the challenge contexts provide them.
 
@@ -49,7 +49,9 @@ TRAIN = Path("data/processed/replogle_nadig_pseudobulk.h5ad")
 CACHE = Path("data/processed/local_vcc_h1")
 OUT = Path("results/local_vcc_h1")
 CONTROL = "non-targeting"
-N_PERTS, CELLS_PER_PERT, N_CONTROLS, MEDIAN_UMI = 100, 400, 8000, 20_000
+# Sized so the 5-split replicate anchor fits in ~10 GB of free RAM (100 perturbations
+# with 8,000 controls needed ~12 GB).
+N_PERTS, CELLS_PER_PERT, N_CONTROLS, MEDIAN_UMI = 60, 400, 4000, 20_000
 SEED = 0
 RUNS = [("none", 1.0), ("mean", 1.0), ("ridge", 1.0), ("ridge", 0.3)]
 MEMBERS = [
