@@ -127,3 +127,39 @@ class CoexpressionRidge:
     def predict(self, features: pd.DataFrame, perts: Sequence[str]) -> pd.DataFrame:
         pred = self.model_.predict(self._design(features, perts))
         return pd.DataFrame(pred, index=list(perts), columns=self.columns_)
+
+
+def load_lines(paths: Sequence) -> tuple[list[str], dict, dict]:
+    """Effects and control moments of every cell type in the given pseudobulk files,
+    restricted to the genes they all share (in the first file's order).
+
+    Returns (genes, effects by cell type, moments by cell type).
+    """
+    eff, moments, gene_sets = {}, {}, []
+    for path in paths:
+        bulk = ad.read_h5ad(path)
+        m_genes = list(bulk.uns.get("moments_genes", bulk.var_names))
+        gene_sets += [list(bulk.var_names), m_genes]
+        for cell_type, m in bulk.uns["moments"].items():
+            eff[cell_type] = effects(bulk, cell_type)
+            moments[cell_type] = (m, m_genes)
+    shared = set.intersection(*(set(g) for g in gene_sets))
+    genes = [g for g in gene_sets[0] if g in shared]
+    restricted = {}
+    for cell_type, (m, m_genes) in moments.items():
+        idx = pd.Index(m_genes).get_indexer(genes)
+        restricted[cell_type] = {
+            "n": float(m["n"]),
+            "sum": np.asarray(m["sum"])[idx],
+            "outer": np.asarray(m["outer"])[np.ix_(idx, idx)],
+        }
+        eff[cell_type] = eff[cell_type][genes]
+    return genes, eff, restricted
+
+
+def optimal_scale(pairs) -> float:
+    """The scalar s minimising sum ||s * pred - true||^2 over (pred, true) pairs."""
+    pairs = list(pairs)
+    num = sum(float((p * t).sum()) for p, t in pairs)
+    den = sum(float((p * p).sum()) for p, t in pairs)
+    return num / den if den > 0 else 0.0

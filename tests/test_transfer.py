@@ -62,3 +62,12 @@ def test_ridge_path_matches_sklearn():
     alphas = (0.1, 3.0, 100.0)
     for alpha, pred in zip(alphas, ridge_path(X, Y, X_new, alphas), strict=True):
         assert np.allclose(pred, Ridge(alpha=alpha).fit(X, Y).predict(X_new))
+
+
+def test_optimal_scale_recovers_a_known_factor():
+    from baseline_first.vcc.transfer import optimal_scale
+
+    rng = np.random.default_rng(0)
+    true = [rng.normal(size=(5, 4)) for _ in range(3)]
+    pred = [t / 0.4 for t in true]  # predictions 2.5x too large
+    assert np.isclose(optimal_scale(zip(pred, true, strict=True)), 0.4)

@@ -34,3 +34,6 @@ logs/
 
 # Local Claude Code settings (personal, per machine)
 .claude/
+
+# Built submission files (large; regenerate with scripts/20)
+data/submissions/
