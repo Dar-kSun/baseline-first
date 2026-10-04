@@ -204,3 +204,45 @@ test fold (factors 0.36–0.76 across folds).
   behave differently (a prediction calling no significant genes scores 0 on
   direction fidelity, about −1.7 on the scaled score), so they are measured
   directly in the next section.
+
+## Local VCC 2026 scoring on H1, with the official metrics
+
+**Command:** `python scripts/15_local_vcc_score_h1.py` → `results/local_vcc_h1/`.
+H1 (VCC 2025, CRISPRi, 10x Flex) stands in for an unseen challenge context.
+The reference mirrors the 2026 construction: 60 randomly chosen H1
+perturbations x 400 cells plus 4,000 controls, downsampled to a median of
+20,000 UMI per cell (memory limited it to this size; 100 perturbations with
+8,000 controls needed ~12 GB). Predictions are built from those controls.
+Methods train only on K562, RPE1, HepG2 and Jurkat with every H1 panel gene
+removed from their perturbations (`assert_no_leakage`). Scoring: cell-eval2
+0.18.0, `vcc2026` preset, DE engine pdex 0.3.0 (the one cell-eval2 pins);
+anchors from cell-eval2's own `build_generic_baseline` (0) and
+`compute_replicate_anchor`, 5 splits (1), on the same reference.
+
+| run | PDS | MSE | FID | Reach | JAC | NMAE | overall |
+|---|---|---|---|---|---|---|---|
+| no change | 0.02 | 0.00 | −0.01 | −0.01 | 0.00 | −0.10 | **−0.02** |
+| average response (shrunk) | 0.01 | 0.00 | 0.39 | −0.04 | 0.05 | −0.08 | **0.06** |
+| co-expression ridge (shrunk) | 0.01 | 0.00 | 0.39 | −0.02 | 0.05 | −0.08 | **0.06** |
+| ridge, cells at 0.3x depth | 0.03 | 0.00 | 0.59 | −0.04 | 0.22 | −0.10 | 0.12 |
+| **no change, cells at 0.3x depth** | 0.04 | 0.00 | 0.58 | 0.01 | 0.22 | −0.12 | **0.12** |
+
+Scaled scores (raw values in `results/local_vcc_h1/summary.md`). Expression
+error (MSE) is clamped to [0, 1] by the spec, so every run's worse-than-
+baseline error reads 0.
+
+1. **Zero-shot transfer from public screens barely moves the score.** The
+   ridge and the plain average response tie at 0.06 overall; gene-specific
+   co-expression adds nothing measurable here. Predicting no change scores −0.02.
+2. **Lowering sequencing depth games two metrics.** A prediction with no
+   effect at all scores 0.12 when its cells are thinned to 30% of reads:
+   thinned cells have more zeros than the full-depth control cells they are
+   tested against, so the Wilcoxon test calls spurious "down" genes, some of
+   which coincide with real ones (direction fidelity 0.58, Jaccard 0.22). Any
+   score gained this way is an artefact of the metric, not a better
+   prediction. Submissions should match the reference depth.
+3. **The local anchors differ from the official ones on two metrics.** The
+   0 point's direction fidelity here is 0.017 (official bundles 0.505–0.522)
+   and its Jaccard 0.0002, so DE-metric scaled scores on H1 will not carry
+   over to the official contexts; the other anchors fall in or near the
+   official ranges.

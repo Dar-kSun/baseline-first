@@ -1,0 +1,48 @@
+{
+  "command": "python scripts/15_local_vcc_score_h1.py",
+  "git_commit": "624c9bf2ecbed4fc75cf2a8242bf0549712185e9-dirty",
+  "reference": {
+    "cells": 28000,
+    "perturbations": 60,
+    "controls": 4000,
+    "thinning": 0.37231120467185974
+  },
+  "training_perts_excluded_as_panel_genes": {
+    "hepg2": 8,
+    "jurkat": 16,
+    "k562": 10,
+    "rpe1": 11
+  },
+  "ridge_alpha": 10.0,
+  "shrinkage": {
+    "ridge": 0.7507403697720615,
+    "mean": 0.6974727478241257
+  },
+  "anchors": {
+    "baseline": {
+      "pds_cosine": 0.5138418079096044,
+      "expr_mse_unbiased_capped_norm": 0.9699975227118836,
+      "de_wilcoxon_direction_fidelity_yield_raw": 0.017382782965512114,
+      "de_wilcoxon_direction_reach_raw": 0.11902463232602563,
+      "de_wilcoxon_sig_jaccard": 0.00020006998510825805,
+      "de_wilcoxon_lfc_nmae": 0.944335913115328
+    },
+    "replicate": {
+      "pds_cosine": 0.9468361581920904,
+      "expr_mse_unbiased_capped_norm": 0.006882907937929052,
+      "de_wilcoxon_direction_fidelity_yield_raw": 0.8466329012641136,
+      "de_wilcoxon_direction_reach_raw": 0.9717437693898188,
+      "de_wilcoxon_sig_jaccard": 0.38295760480722113,
+      "de_wilcoxon_lfc_nmae": 0.3704856164414718
+    },
+    "replicate_sd": {
+      "pds_cosine": 0.005707053694542117,
+      "expr_mse_unbiased_capped_norm": 0.0037970859952702572,
+      "de_wilcoxon_direction_fidelity_yield_raw": 0.013704999356594404,
+      "de_wilcoxon_direction_reach_raw": 0.007066815358477215,
+      "de_wilcoxon_sig_jaccard": 0.0140159801654364,
+      "de_wilcoxon_lfc_nmae": 0.006416791960568423
+    }
+  },
+  "seed": 0
+}

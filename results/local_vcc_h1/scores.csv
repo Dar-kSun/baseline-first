@@ -1,0 +1,6 @@
+run,pds_cosine_raw,pds_cosine_scaled,expr_mse_unbiased_capped_norm_raw,expr_mse_unbiased_capped_norm_scaled,de_wilcoxon_direction_fidelity_yield_raw_raw,de_wilcoxon_direction_fidelity_yield_raw_scaled,de_wilcoxon_direction_reach_raw_raw,de_wilcoxon_direction_reach_raw_scaled,de_wilcoxon_sig_jaccard_raw,de_wilcoxon_sig_jaccard_scaled,de_wilcoxon_lfc_nmae_raw,de_wilcoxon_lfc_nmae_scaled,overall
+none-d1,0.524576,0.0247912,1.03128,0,0.00901246,-0.0100938,0.110688,-0.00977697,0,-0.000522707,1.00172,-0.0999917,-0.0159323
+mean-d1,0.519774,0.0137004,1.15893,0,0.343661,0.393461,0.088324,-0.0360032,0.0178338,0.0460703,0.991664,-0.0824739,0.0557925
+ridge-d1,0.518079,0.00978601,1.19114,0,0.341405,0.390741,0.106074,-0.0151871,0.021,0.0543424,0.990438,-0.0803385,0.0598907
+ridge-d0.3,0.526836,0.0300104,1.73164,0,0.506343,0.589641,0.0812541,-0.0442942,0.0840815,0.21915,1.00159,-0.0997675,0.11579
+none-d0.3,0.529096,0.0352296,1.56442,0,0.501399,0.583679,0.125372,0.00744418,0.0835893,0.217864,1.01065,-0.115558,0.121443
