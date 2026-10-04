@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from baseline_first.vcc.transfer import CoexpressionRidge, control_moments, correlation_features
 
@@ -71,3 +72,18 @@ def test_optimal_scale_recovers_a_known_factor():
     true = [rng.normal(size=(5, 4)) for _ in range(3)]
     pred = [t / 0.4 for t in true]  # predictions 2.5x too large
     assert np.isclose(optimal_scale(zip(pred, true, strict=True)), 0.4)
+
+
+def test_fold_changes_map_effects_onto_the_full_axis():
+    import scipy.sparse as sp
+
+    from baseline_first.vcc.transfer import fold_changes
+
+    genes_all = ["A", "B", "C", "D"]
+    controls = sp.csr_matrix(np.array([[10.0, 5.0, 0.0, 2.0], [12.0, 3.0, 0.0, 2.0]]))
+    effect = pd.DataFrame([[0.0, np.log(2.0), 0.3]], index=["D"], columns=["A", "B", "C"])
+    fc = fold_changes(effect, controls, genes_all)
+    assert fc.loc["D", "A"] == pytest.approx(1.0)
+    assert fc.loc["D", "B"] == pytest.approx(2.0, rel=1e-3)  # log1p ~ log when well expressed
+    assert fc.loc["D", "C"] == 1.0  # unexpressed in controls: left unchanged
+    assert fc.loc["D", "D"] == 0.25  # the target itself: nominal knockdown

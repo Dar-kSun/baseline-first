@@ -1,0 +1,189 @@
+{
+  "command": "python scripts/14_transfer_with_shrinkage.py",
+  "git_commit": "22030176b173965bbe69c10fb47cd6a084e9195b",
+  "folds": 5,
+  "anchors": 1000,
+  "seed": 0,
+  "n_shared_genes": 6118,
+  "fits": [
+    {
+      "held_out": "ARC_H1",
+      "fold": 0,
+      "alpha": 10.0,
+      "s_ridge": 0.6906976546638831,
+      "s_mean": 0.6191759429421705
+    },
+    {
+      "held_out": "ARC_H1",
+      "fold": 1,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.7109470794263091,
+      "s_mean": 0.7063873149113058
+    },
+    {
+      "held_out": "ARC_H1",
+      "fold": 2,
+      "alpha": 10.0,
+      "s_ridge": 0.7069776997074732,
+      "s_mean": 0.6548722975222757
+    },
+    {
+      "held_out": "ARC_H1",
+      "fold": 3,
+      "alpha": 10.0,
+      "s_ridge": 0.7195377436784332,
+      "s_mean": 0.6777710044902866
+    },
+    {
+      "held_out": "ARC_H1",
+      "fold": 4,
+      "alpha": 10.0,
+      "s_ridge": 0.7549983184299951,
+      "s_mean": 0.6931586801958469
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 0,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.3592546306961747,
+      "s_mean": 0.378353500295405
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 1,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.42910824567626726,
+      "s_mean": 0.4376786758815157
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 2,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.39416685588959827,
+      "s_mean": 0.40678533968519537
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 3,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.4212394599130227,
+      "s_mean": 0.43319752653636623
+    },
+    {
+      "held_out": "hepg2",
+      "fold": 4,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.40885051157627295,
+      "s_mean": 0.42648254821338455
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 0,
+      "alpha": 10.0,
+      "s_ridge": 0.6729728155650164,
+      "s_mean": 0.6281722001319116
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 1,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.6770647533313514,
+      "s_mean": 0.6951905811060086
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 2,
+      "alpha": 10.0,
+      "s_ridge": 0.6881952421386047,
+      "s_mean": 0.6640419346492124
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 3,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.6680831807513702,
+      "s_mean": 0.6791949147306142
+    },
+    {
+      "held_out": "jurkat",
+      "fold": 4,
+      "alpha": 10.0,
+      "s_ridge": 0.7034476950335259,
+      "s_mean": 0.6610867828263567
+    },
+    {
+      "held_out": "k562",
+      "fold": 0,
+      "alpha": 10.0,
+      "s_ridge": 0.6339827023537056,
+      "s_mean": 0.595635354149938
+    },
+    {
+      "held_out": "k562",
+      "fold": 1,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.6582190341854466,
+      "s_mean": 0.6865202643032983
+    },
+    {
+      "held_out": "k562",
+      "fold": 2,
+      "alpha": 10.0,
+      "s_ridge": 0.6457246091790945,
+      "s_mean": 0.6368709204978423
+    },
+    {
+      "held_out": "k562",
+      "fold": 3,
+      "alpha": 10.0,
+      "s_ridge": 0.6250491248287176,
+      "s_mean": 0.640891997678858
+    },
+    {
+      "held_out": "k562",
+      "fold": 4,
+      "alpha": 3.1622776601683795,
+      "s_ridge": 0.602598731226855,
+      "s_mean": 0.6518001460689965
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 0,
+      "alpha": 10.0,
+      "s_ridge": 0.5317849080438006,
+      "s_mean": 0.5294293457984762
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 1,
+      "alpha": 10.0,
+      "s_ridge": 0.6135914315116188,
+      "s_mean": 0.6196690683098142
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 2,
+      "alpha": 10.0,
+      "s_ridge": 0.5627724374388005,
+      "s_mean": 0.5818837559514696
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 3,
+      "alpha": 10.0,
+      "s_ridge": 0.609324070816994,
+      "s_mean": 0.6378163040411398
+    },
+    {
+      "held_out": "rpe1",
+      "fold": 4,
+      "alpha": 10.0,
+      "s_ridge": 0.6078243813856965,
+      "s_mean": 0.6214970750529407
+    }
+  ],
+  "sources": [
+    "data\\processed\\replogle_nadig_pseudobulk.h5ad",
+    "data\\processed\\vcc2025\\competition_train_pseudobulk.h5ad"
+  ]
+}

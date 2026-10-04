@@ -1,0 +1,32 @@
+| held out | method | n | PDS [95% CI] | expression error ratio | Pearson |
+|---|---|---|---|---|---|
+| ARC_H1 | CoexpressionRidge | 150 | 0.490 [0.440, 0.542] | 1.878 | 0.071 |
+| ARC_H1 | CoexpressionRidge+shrink | 150 | 0.490 [0.440, 0.542] | 1.408 | 0.071 |
+| ARC_H1 | ContextMean* | 150 | 0.500 [0.452, 0.548] | 0.950 | 0.214 |
+| ARC_H1 | MeanResponse | 150 | 0.500 [0.454, 0.548] | 1.545 | 0.082 |
+| ARC_H1 | MeanResponse+shrink | 150 | 0.500 [0.454, 0.548] | 1.204 | 0.082 |
+| ARC_H1 | NoChange | 150 | 0.500 [0.500, 0.500] | 1.000 | nan |
+| hepg2 | CoexpressionRidge | 1340 | 0.521 [0.505, 0.536] | 0.911 | 0.256 |
+| hepg2 | CoexpressionRidge+shrink | 1340 | 0.521 [0.505, 0.536] | 0.935 | 0.256 |
+| hepg2 | ContextMean* | 1340 | 0.500 [0.484, 0.515] | 0.851 | 0.333 |
+| hepg2 | MeanResponse | 1340 | 0.500 [0.484, 0.515] | 0.901 | 0.272 |
+| hepg2 | MeanResponse+shrink | 1340 | 0.500 [0.484, 0.515] | 0.941 | 0.272 |
+| hepg2 | NoChange | 1340 | 0.500 [0.500, 0.500] | 1.000 | nan |
+| jurkat | CoexpressionRidge | 1537 | 0.522 [0.508, 0.537] | 1.062 | 0.135 |
+| jurkat | CoexpressionRidge+shrink | 1537 | 0.522 [0.508, 0.537] | 1.003 | 0.135 |
+| jurkat | ContextMean* | 1537 | 0.500 [0.486, 0.514] | 0.934 | 0.239 |
+| jurkat | MeanResponse | 1537 | 0.500 [0.485, 0.514] | 1.074 | 0.124 |
+| jurkat | MeanResponse+shrink | 1537 | 0.500 [0.485, 0.514] | 1.010 | 0.124 |
+| jurkat | NoChange | 1537 | 0.500 [0.500, 0.500] | 1.000 | nan |
+| k562 | CoexpressionRidge | 1383 | 0.524 [0.508, 0.539] | 1.076 | 0.130 |
+| k562 | CoexpressionRidge+shrink | 1383 | 0.524 [0.508, 0.539] | 1.001 | 0.130 |
+| k562 | ContextMean* | 1383 | 0.500 [0.485, 0.515] | 0.945 | 0.217 |
+| k562 | MeanResponse | 1383 | 0.500 [0.485, 0.515] | 1.105 | 0.123 |
+| k562 | MeanResponse+shrink | 1383 | 0.500 [0.485, 0.515] | 1.016 | 0.123 |
+| k562 | NoChange | 1383 | 0.500 [0.500, 0.500] | 1.000 | nan |
+| rpe1 | CoexpressionRidge | 1499 | 0.512 [0.497, 0.527] | 0.880 | 0.332 |
+| rpe1 | CoexpressionRidge+shrink | 1499 | 0.512 [0.497, 0.527] | 0.919 | 0.332 |
+| rpe1 | ContextMean* | 1499 | 0.500 [0.486, 0.514] | 0.725 | 0.447 |
+| rpe1 | MeanResponse | 1499 | 0.500 [0.485, 0.515] | 0.898 | 0.339 |
+| rpe1 | MeanResponse+shrink | 1499 | 0.500 [0.485, 0.515] | 0.932 | 0.339 |
+| rpe1 | NoChange | 1499 | 0.500 [0.500, 0.500] | 1.000 | nan |

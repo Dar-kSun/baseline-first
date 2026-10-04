@@ -43,14 +43,22 @@ def simulate_cells(
     fold_change: np.ndarray,
     n_cells: int,
     rng: np.random.Generator,
+    depth: float = 1.0,
 ) -> sp.csr_matrix:
-    """Resample `n_cells` control cells and scale each gene by `fold_change`."""
+    """Resample `n_cells` control cells and scale each gene by `fold_change`.
+
+    `depth` < 1 additionally keeps each read with that probability (binomial
+    thinning), lowering sequencing depth uniformly without changing expected
+    proportions.
+    """
     if np.any(fold_change < 0) or not np.all(np.isfinite(fold_change)):
         raise ValueError("fold changes must be finite and non-negative")
     picked = controls[rng.integers(0, controls.shape[0], size=n_cells)].tocsr()
     picked.sort_indices()
     counts = picked.data.astype(np.int64)
-    f = fold_change[picked.indices]
+    if not 0 < depth <= 1:
+        raise ValueError("depth must be in (0, 1]")
+    f = fold_change[picked.indices] * depth
     down = f <= 1
     new = np.empty_like(counts)
     new[down] = rng.binomial(counts[down], f[down])
@@ -72,6 +80,7 @@ def write_submission(
     contexts: Mapping[str, tuple[sp.csr_matrix, pd.DataFrame]],
     n_cells: int = CELLS_PER_PERT,
     seed: int = 0,
+    depth: float = 1.0,
 ) -> dict[str, int]:
     """Write a submission h5ad.
 
@@ -98,7 +107,7 @@ def write_submission(
                 raise ValueError(f"context {context}: control cells must be on the gene axis")
             for p_index, (pert, row) in enumerate(fold_changes.iterrows()):
                 rng = np.random.default_rng([seed, c_index, p_index])
-                cells = simulate_cells(controls, row.to_numpy(dtype=float), n_cells, rng)
+                cells = simulate_cells(controls, row.to_numpy(dtype=float), n_cells, rng, depth)
                 _append(data, cells.data)
                 _append(indices, cells.indices.astype(np.int32))
                 indptr.extend(indptr[-1] + cells.indptr[1:])

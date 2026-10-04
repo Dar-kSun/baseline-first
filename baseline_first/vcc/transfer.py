@@ -163,3 +163,113 @@ def optimal_scale(pairs) -> float:
     num = sum(float((p * t).sum()) for p, t in pairs)
     den = sum(float((p * p).sum()) for p, t in pairs)
     return num / den if den > 0 else 0.0
+
+
+def fold_changes(
+    effect: pd.DataFrame,
+    controls,
+    genes_all: Sequence[str],
+    target_fold_change: float = 0.25,
+    max_fold_change: float = 10.0,
+) -> pd.DataFrame:
+    """Per-gene fold changes (perturbations x genes_all) on a context's control profile.
+
+    `effect` holds predicted changes in log1p(5e4-normalised) profile on a subset of
+    genes; genes outside it keep fold change 1. Each perturbation's own target gene is
+    set to `target_fold_change`, a nominal CRISPRi knockdown that no VCC metric scores.
+    """
+    genes_all = list(genes_all)
+    pos = pd.Index(genes_all).get_indexer(list(effect.columns))
+    if (pos < 0).any():
+        raise ValueError("effect genes must all be on the full gene axis")
+    summed = np.asarray(controls.sum(axis=0)).ravel()
+    ctrl_profile = np.log1p(BULK_TARGET_SUM * summed / summed.sum())[pos]
+    with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
+        fc = np.expm1(ctrl_profile + effect.to_numpy()) / np.expm1(ctrl_profile)
+    fc = np.where(ctrl_profile > 0, fc, 1.0)
+    fc = np.clip(np.nan_to_num(fc, nan=1.0, posinf=max_fold_change), 0.0, max_fold_change)
+    out = np.ones((len(effect), len(genes_all)))
+    out[:, pos] = fc
+    targets = pd.Index(genes_all).get_indexer(list(effect.index))
+    hit = targets >= 0
+    out[np.flatnonzero(hit), targets[hit]] = target_fold_change
+    return pd.DataFrame(out, index=effect.index, columns=genes_all)
+
+
+class Transfer:
+    """A fitted transfer model: anchors, ridge, average response and shrinkage factors."""
+
+    def __init__(self, genes, anchors, ridge, mean_response, scale_ridge, scale_mean):
+        self.genes = list(genes)
+        self.anchors = anchors
+        self.ridge = ridge
+        self.mean_response = mean_response
+        self.scale_ridge = scale_ridge
+        self.scale_mean = scale_mean
+
+    def predict(self, method: str, moments: dict, perts: Sequence[str]) -> pd.DataFrame:
+        """Predicted effects (perts x genes) in a context described by its control moments."""
+        if method == "ridge":
+            feats = correlation_features(moments, self.genes, self.anchors)
+            return self.ridge.predict(feats, perts) * self.scale_ridge
+        if method == "mean":
+            row = self.mean_response.to_numpy() * self.scale_mean
+            return pd.DataFrame(
+                np.tile(row, (len(perts), 1)), index=list(perts), columns=self.genes
+            )
+        if method == "none":
+            return pd.DataFrame(0.0, index=list(perts), columns=self.genes)
+        raise ValueError(f"unknown method {method!r}")
+
+
+def fit_transfer(
+    genes: Sequence[str],
+    eff: dict,
+    moments: dict,
+    n_anchors: int = 1000,
+    n_folds: int = 5,
+    seed: int = 0,
+) -> Transfer:
+    """Fit the co-expression ridge and the average response on the given cell lines,
+    and their shrinkage factors: each line held out in turn and predicted, by models
+    fitted on the others, on a gene fold they did not train on."""
+    lines = sorted(eff)
+    pooled = sum(variances(moments[m]) for m in lines)
+    anchors = np.sort(np.argsort(-pooled, kind="stable")[:n_anchors])
+    feats = {m: correlation_features(moments[m], genes, anchors) for m in lines}
+    ridge = CoexpressionRidge(seed=seed).fit([(feats[m], eff[m]) for m in lines])
+    mean_response = pd.concat(eff.values()).mean(axis=0)
+
+    all_perts = sorted(set().union(*(e.index for e in eff.values())))
+    rng = np.random.default_rng(seed)
+    fold_of = dict(
+        zip(rng.permutation(all_perts), np.arange(len(all_perts)) % n_folds, strict=True)
+    )
+    ridge_pairs, mean_pairs = [], []
+    for held in lines:
+        rest = [m for m in lines if m != held]
+        inner = {m: eff[m].loc[[p for p in eff[m].index if fold_of[p] != 0]] for m in rest}
+        target = eff[held].loc[[p for p in eff[held].index if fold_of[p] == 0]]
+        inner_ridge = CoexpressionRidge(alphas=(ridge.alpha_,), n_inner_folds=2).fit(
+            [(feats[m], inner[m]) for m in rest]
+        )
+        ridge_pairs.append(
+            (inner_ridge.predict(feats[held], target.index).to_numpy(), target.to_numpy())
+        )
+        inner_mean = pd.concat(inner.values()).mean(axis=0).to_numpy()
+        mean_pairs.append((np.tile(inner_mean, (len(target), 1)), target.to_numpy()))
+    return Transfer(
+        genes, anchors, ridge, mean_response, optimal_scale(ridge_pairs), optimal_scale(mean_pairs)
+    )
+
+
+def context_moments(cells, columns) -> dict:
+    """Moments of log1p(1e4 * counts / total) over a context's control cells on `columns`,
+    with each cell's total taken over all genes."""
+    import scipy.sparse as sp
+
+    cells = sp.csr_matrix(cells)
+    totals = np.asarray(cells.sum(axis=1)).ravel()
+    scaled = sp.diags(1e4 / np.where(totals > 0, totals, 1)) @ cells
+    v = np.log1p(scaled[:, columns].toarray())
+    return {"n": float(len(v)), "sum": v.sum(axis=0), "outer": v.T @ v}

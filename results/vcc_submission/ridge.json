@@ -1,0 +1,39 @@
+{
+  "model_name": "arV1-CoexprRidge",
+  "method": "ridge",
+  "git_commit": "1b580efad31ad636075460fbadb26b19f24b68ab-dirty",
+  "training_lines": [
+    "ARC_H1",
+    "hepg2",
+    "jurkat",
+    "k562",
+    "rpe1"
+  ],
+  "n_shared_genes": 6117,
+  "ridge_alpha": 10.0,
+  "shrinkage_factor": 0.7377427541675716,
+  "anchors": 1000,
+  "seed": 0,
+  "contexts": {
+    "A": {
+      "median_abs_log2_fc": 0.03668571958315811,
+      "targets_with_features": 200
+    },
+    "B": {
+      "median_abs_log2_fc": 0.04634352927869345,
+      "targets_with_features": 200
+    },
+    "C": {
+      "median_abs_log2_fc": 0.04019504462673166,
+      "targets_with_features": 200
+    }
+  },
+  "submission": {
+    "n_cells": 360000,
+    "n_nonzero": 2072765795
+  },
+  "vcc_prep": {
+    "exit_code": 1,
+    "output": "vcc: unexpected error \u00e2\u20ac\u201d MemoryError: Unable to allocate 15.4 GiB for an array with shape (2072765795,) and data type int64\n  This is a bug; re-run with VCC_TRACEBACK=1 for the full trace and report it.\n"
+  }
+}

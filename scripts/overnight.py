@@ -61,6 +61,7 @@ STEPS = [
     ("shrinkage", [PY, "-u", "scripts/14_transfer_with_shrinkage.py"], 2, None),
     ("submission-ridge", [PY, "-u", SUBMIT, "--method", "ridge"], 2, None),
     ("submission-mean", [PY, "-u", SUBMIT, "--method", "mean"], 2, None),
+    ("local-h1", [PY, "-u", "scripts/15_local_vcc_score_h1.py"], 2, None),
 ]
 DEFAULT = ["stream", "benchmark", "h1", "tests"]
 

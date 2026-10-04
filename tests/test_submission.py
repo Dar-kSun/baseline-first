@@ -99,3 +99,12 @@ def test_official_validator_accepts_the_format(tmp_path):
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_depth_thins_reads_proportionally():
+    controls = control_counts()
+    fold = np.linspace(0.5, 2.0, controls.shape[1])
+    full = simulate_cells(controls, fold, 30_000, np.random.default_rng(0))
+    thin = simulate_cells(controls, fold, 30_000, np.random.default_rng(0), depth=0.3)
+    ratio = np.asarray(thin.mean(axis=0)).ravel() / np.asarray(full.mean(axis=0)).ravel()
+    assert np.allclose(ratio, 0.3, rtol=0.05)
