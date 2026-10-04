@@ -168,20 +168,23 @@ def main() -> None:
     controls = sp.csr_matrix(ref[ref.obs["target_gene"] == CONTROL].X)
     log(f"reference: {ref.n_obs:,} cells, {len(panel)} perturbations, {controls.shape[0]} controls")
 
-    # Anchors, cached.
-    anchors_path = CACHE / "anchors.json"
-    if anchors_path.exists():
-        anchors = json.loads(anchors_path.read_text())
-    else:
+    # Anchors, each cached as soon as it is computed.
+    b_path, r_path = CACHE / "anchor_baseline.json", CACHE / "anchor_replicate.csv"
+    if not b_path.exists():
         log("baseline anchor (context mean)")
-        b = wide_mean(build_generic_baseline(ref, config=cfg).results, cfg)
+        b_path.write_text(
+            json.dumps(wide_mean(build_generic_baseline(ref, config=cfg).results, cfg))
+        )
+    if not r_path.exists():
         log("replicate anchor (5 splits)")
-        _, anchor = compute_replicate_anchor(ref, config=cfg)
-        r_rows = {d["metric"]: d for d in anchor.to_dicts()}
-        value_col = "mean"
-        r = {m: float(r_rows[m][value_col]) for m in MEMBERS}
-        anchors = {"baseline": b, "replicate": r, "replicate_column": value_col}
-        anchors_path.write_text(json.dumps(anchors, indent=2))
+        compute_replicate_anchor(ref, config=cfg)[1].write_csv(r_path)
+    replicate = pl.read_csv(r_path)
+    r_rows = {d["metric"]: d for d in replicate.to_dicts()}
+    anchors = {
+        "baseline": json.loads(b_path.read_text()),
+        "replicate": {m: float(r_rows[m]["replicate"]) for m in MEMBERS},
+        "replicate_sd": {m: float(r_rows[m]["replicate_sd"]) for m in MEMBERS},
+    }
     log(f"anchors: {anchors}")
 
     # Training data: the four public lines, with every H1 panel gene removed.
