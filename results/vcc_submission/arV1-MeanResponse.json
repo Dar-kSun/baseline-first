@@ -1,0 +1,49 @@
+{
+  "model_name": "arV1-MeanResponse",
+  "method": "mean",
+  "depth": 1.0,
+  "git_commit": "3e6494aafb5991fc212df1eed2d4bb67c46fd744-dirty",
+  "panel_id": "vcc2026-test-1",
+  "contexts_predicted": ["D", "E", "F"],
+  "training_sources": ["data/processed/replogle_nadig_pseudobulk.h5ad"],
+  "training_lines": ["hepg2", "jurkat", "k562", "rpe1"],
+  "n_shared_genes": 6197,
+  "ridge_alpha": 10.0,
+  "shrinkage_ridge": 0.789,
+  "shrinkage_mean": 0.716,
+  "seed": 0,
+  "submission": {
+    "n_cells": 360000,
+    "n_nonzero": 1989779692
+  },
+  "vcc_prep": {
+    "exit_code": 0,
+    "cli_version": "0.3.0",
+    "cells": 360000,
+    "genes": 18533,
+    "encoding": "float32",
+    "cells_per_context": {"D": 120000, "E": 120000, "F": 120000},
+    "targets": "verified against the official list",
+    "normalization": "counts-preserved",
+    "vcc_bytes": 3180093440
+  },
+  "vcc_submit": {
+    "entry": "Hu8TAlvVsGrmdmZt95Mo",
+    "submitted_at": "2026-11-01T10:26:09.305548Z",
+    "mode": "final",
+    "uploaded": "3.0 GiB in 26m03s",
+    "scoring_job": "vcc-metrics-prod-hu8talvvsgrmdmzt95mo",
+    "note": "Final-phase scores stay hidden until the winners are announced, so no score is recorded here."
+  },
+  "provenance_note": [
+    "Assembled by hand from logs/build-submission.log, logs/prep.log and logs/submit.log,",
+    "not written by scripts/20 as usual: the machine lost power during that run's `vcc prep`",
+    "step, after the .h5ad had been written and verified complete. `vcc prep` was then re-run",
+    "standalone on that same .h5ad, which is also the lower-memory path (no parent process",
+    "holding the control matrices). The shrinkage figures are as scripts/20 printed them, to",
+    "three decimal places; re-running `python scripts/20_make_vcc_submission.py --method mean`",
+    "reproduces them exactly, since the pipeline is seeded (seed 0).",
+    "prep_peak_gib in vcc/sizing.py predicted ~21.3 GiB for this file; it actually committed",
+    "about 31 GB, which that model does not capture for an internally gzip-compressed input."
+  ]
+}

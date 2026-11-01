@@ -59,7 +59,9 @@ def test_submission_reads_back_as_valid_anndata(tmp_path):
     assert adata.shape == (2 * 3 * 6, 12) == (stats["n_cells"], 12)
     assert list(adata.var_names) == genes
     assert adata.obs.groupby(["context", "target_gene"], observed=True).size().eq(6).all()
-    assert np.issubdtype(adata.X.dtype, np.integer)
+    # float32 on disk, for vcc prep's no-copy path, but the values stay whole counts.
+    assert adata.X.dtype == np.float32
+    assert np.array_equal(adata.X.data, np.rint(adata.X.data))
     assert adata.X.nnz == stats["n_nonzero"]
 
 

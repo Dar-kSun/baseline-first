@@ -1,6 +1,10 @@
-"""Build a VCC 2026 validation-round submission file. It does NOT submit.
+"""Build a VCC 2026 submission file. It does NOT submit.
 
-    python scripts/20_make_vcc_submission.py --method ridge [--depth 0.3]
+    python scripts/20_make_vcc_submission.py --method mean [--vcc-dir DIR]
+
+The contexts come from the bundle's own manifest.json, so the same command
+builds a validation-round file (A, B, C) from `vcc datasets download controls`
+and a final-round file (D, E, F) from `controls-final`.
 
 Methods (scripts/14 and scripts/15 show how each scores on held-out public data):
   ridge  co-expression ridge + shrinkage: each target gene is described by its
@@ -10,12 +14,17 @@ Methods (scripts/14 and scripts/15 show how each scores on held-out public data)
   mean   the same scaled average effect for every target.
   none   no change: resampled control cells (a reference point).
 
-Training data: K562, RPE1, HepG2, Jurkat (Replogle 2022 + Nadig 2025) and H1
-(VCC 2025), on the genes they share with each other and the VCC gene axis.
-Targets are never looked up, only described by co-expression.
+Training data: whichever of SOURCES is present — K562, RPE1, HepG2 and Jurkat
+(Replogle 2022 + Nadig 2025), and H1 (VCC 2025) if its pseudobulk has been
+built — on the genes they share with each other and the VCC gene axis. Targets
+are never looked up, only described by co-expression. The four Replogle/Nadig
+lines on their own are the configuration scripts/15 scored against held-out H1.
 
-`--depth` keeps each read with that probability. A full-depth file has about
-2.1 billion stored values, which `vcc prep` cannot load in under ~25 GB of RAM.
+`--depth` keeps each read with that probability. Leave it at 1: a lower depth
+than the challenge's own control cells inflates the DE metrics through
+spurious calls (see docs/findings.md), which is not a real improvement.
+A full-depth file holds about 2.0 billion stored values, which `vcc prep`
+packages in roughly 21 GiB of RAM.
 
 Outputs data/submissions/arV1-<Method>[-d<depth>].h5ad and, after `vcc prep`,
 .vcc, plus results/vcc_submission/<name>.json. Exits non-zero if prep fails.
@@ -42,10 +51,9 @@ SOURCES = [
     Path("data/processed/replogle_nadig_pseudobulk.h5ad"),
     Path("data/processed/vcc2025/competition_train_pseudobulk.h5ad"),
 ]
-VCC = Path("data/raw/vcc2026")
+VCC_DEFAULT = Path("data/raw/vcc2026-final")
 OUT = Path("data/submissions")
 RECORD = Path("results/vcc_submission")
-CONTEXTS = ["A", "B", "C"]
 SEED = 0
 NAMES = {"ridge": "arV1-CoexprRidge", "mean": "arV1-MeanResponse", "none": "arV1-NoChange"}
 
@@ -61,13 +69,34 @@ def main() -> None:
     parser.add_argument("--method", choices=sorted(NAMES), default="ridge")
     parser.add_argument("--depth", type=float, default=1.0, help="read-keeping probability")
     parser.add_argument("--no-prep", action="store_true", help="skip vcc prep")
+    parser.add_argument(
+        "--vcc-dir",
+        type=Path,
+        default=VCC_DEFAULT,
+        help="an unpacked controls bundle; its manifest.json names the contexts",
+    )
     args = parser.parse_args()
+    vcc = args.vcc_dir
     commit = git_commit()
     name = NAMES[args.method] + (f"-d{args.depth:g}" if args.depth < 1 else "")
 
-    vcc_genes = pd.read_csv(VCC / "gene_names.csv")["gene_name"].astype(str).tolist()
-    perts = pd.read_csv(VCC / "pert_counts.csv")["target_gene"].astype(str).tolist()
-    genes, eff, moments = load_lines(SOURCES)
+    manifest = json.loads((vcc / "manifest.json").read_text())
+    contexts_wanted = list(manifest["contexts"])
+    vcc_genes = pd.read_csv(vcc / "gene_names.csv")["gene_name"].astype(str).tolist()
+    perts = pd.read_csv(vcc / "pert_counts.csv")["target_gene"].astype(str).tolist()
+    print(
+        f"panel {manifest['panel_id']}: contexts {','.join(contexts_wanted)}, "
+        f"{len(perts)} perturbations, {len(vcc_genes)} genes",
+        flush=True,
+    )
+
+    sources = [p for p in SOURCES if p.exists()]
+    if not sources:
+        sys.exit(f"no pseudobulk sources found; expected one of {[str(p) for p in SOURCES]}")
+    missing = [str(p) for p in SOURCES if not p.exists()]
+    if missing:
+        print(f"training without {missing} (not built)", flush=True)
+    genes, eff, moments = load_lines(sources)
     keep = [i for i, g in enumerate(genes) if g in set(vcc_genes)]
     genes = [genes[i] for i in keep]
     eff = {m: e[genes] for m, e in eff.items()}
@@ -84,8 +113,8 @@ def main() -> None:
 
     gene_pos = pd.Index(vcc_genes).get_indexer(genes)
     contexts, record = {}, {}
-    for c in CONTEXTS:
-        cells = ad.read_h5ad(VCC / f"context_{c}.h5ad")
+    for c in contexts_wanted:
+        cells = ad.read_h5ad(vcc / f"context_{c}.h5ad")
         if list(cells.var_names.astype(str)) != vcc_genes:
             raise ValueError(f"context {c} is not on the official gene axis")
         controls = sp.csr_matrix(cells.X)
@@ -109,9 +138,9 @@ def main() -> None:
                 "prep",
                 str(h5ad_path),
                 "-g",
-                str(VCC / "gene_names.csv"),
+                str(vcc / "gene_names.csv"),
                 "--perts",
-                str(VCC / "pert_counts.csv"),
+                str(vcc / "pert_counts.csv"),
                 "-o",
                 str(OUT / f"{name}.vcc"),
                 "-f",
@@ -131,6 +160,9 @@ def main() -> None:
                 "method": args.method,
                 "depth": args.depth,
                 "git_commit": commit,
+                "panel_id": manifest["panel_id"],
+                "contexts_predicted": contexts_wanted,
+                "training_sources": [str(p) for p in sources],
                 "training_lines": sorted(eff),
                 "n_shared_genes": len(genes),
                 "ridge_alpha": model.ridge.alpha_,

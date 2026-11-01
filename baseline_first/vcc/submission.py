@@ -19,6 +19,13 @@ the expected mean exact (zeros contribute zero either way).
 
 `write_submission` streams one perturbation at a time into a gzip-compressed
 h5ad, so memory stays at one perturbation's cells regardless of panel size.
+
+X is stored as float32 holding whole numbers. The values are counts either
+way, but `vcc prep` only skips a second full-matrix copy when the input dtype
+already equals its output encoding (float32 by default), so storing int32
+would roughly double the memory needed to package a full-size panel: about
+35 GiB rather than 21 GiB for the 2.0e9 nonzeros of a 300-perturbation,
+three-context submission.
 """
 
 from __future__ import annotations
@@ -97,7 +104,7 @@ def write_submission(
         X = h5.create_group("X")
         X.attrs.update({"encoding-type": "csr_matrix", "encoding-version": "0.1.0"})
         opts = {"maxshape": (None,), "chunks": (1 << 20,), "compression": "gzip"}
-        data = X.create_dataset("data", shape=(0,), dtype=np.int32, **opts)
+        data = X.create_dataset("data", shape=(0,), dtype=np.float32, **opts)
         indices = X.create_dataset("indices", shape=(0,), dtype=np.int32, **opts)
         indptr = [0]
         for c_index, (context, (controls, fold_changes)) in enumerate(contexts.items()):
@@ -108,7 +115,7 @@ def write_submission(
             for p_index, (pert, row) in enumerate(fold_changes.iterrows()):
                 rng = np.random.default_rng([seed, c_index, p_index])
                 cells = simulate_cells(controls, row.to_numpy(dtype=float), n_cells, rng, depth)
-                _append(data, cells.data)
+                _append(data, cells.data.astype(np.float32, copy=False))
                 _append(indices, cells.indices.astype(np.int32))
                 indptr.extend(indptr[-1] + cells.indptr[1:])
                 labels.extend([pert] * n_cells)

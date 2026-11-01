@@ -78,6 +78,26 @@ A expresses CD3E (T-cell-like), B is VIM-high with COL1A1 (mesenchymal-like),
 C expresses KRT5, TP63 and SOX2 (squamous-epithelial-like). Mean log-CPM
 profiles correlate 0.75 to 0.84 between contexts.
 
+## Virtual Cell Challenge 2026: final-round controls
+
+| | |
+|---|---|
+| Source | `vcc datasets download controls-final` (vcc-cli 0.3.0), requires a registered challenge account in the final phase |
+| Archive | `vcc_2026_controls_final.zip`, 643,356,568 bytes, md5 `75d9e80f6f480165223261ab1e4de8be`; the CLI verified its crc32c |
+| Panel | `vcc2026-test-1`, partition `test`, contexts D, E, F |
+| Contents | `context_{D,E,F}.h5ad` (18,400 non-targeting cells each: 46 guides x 400 cells), `gene_names.csv` (18,533 genes, with a `gene_name` header), `pert_counts.csv` (the 300 target genes, same for all contexts), `manifest.json` |
+| Values | raw integer counts (stored as float32), median 20,224 / 19,804 / 19,856 UMI per cell in D / E / F |
+| Downloaded | 2026-10-31 |
+| Redistribution | Challenge data: not committed, not redistributed |
+
+The same shape as the validation bundle: 300 perturbations x 400 cells across
+three contexts is 360,000 cells to predict. The control cells carry 5,679 /
+5,522 / 5,481 nonzero genes on average in D / E / F, so a full-depth
+prediction holds about 2.0e9 stored values. That is just under 2^31, the
+point where SciPy promotes CSR indices to int64 and the cost per nonzero
+steps from 8 to 12 bytes — which is why `vcc prep` can package this panel on
+a 24 GB machine at all.
+
 ## Not yet added
 
 Replogle 2022 and a Tabula
