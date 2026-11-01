@@ -117,9 +117,10 @@ context's own mean response, 1 = a replicate experiment):
 Zero-shot transfer from public screens barely moves the score. And thinning
 the predicted cells' reads lifts even a prediction with no effect at all,
 because thinned cells produce spurious differential-expression calls against
-full-depth controls: a weakness of the metrics worth knowing about, not a
-better prediction. Details and caveats (the local anchors differ from the
-official ones on two metrics) are in [`docs/findings.md`](docs/findings.md).
+full-depth controls. That is not a better prediction, and submissions should
+match the reference depth — but what the lift says about the challenge's own
+metrics is a separate question, taken up below. Details and caveats are in
+[`docs/findings.md`](docs/findings.md).
 
 **The entry was submitted at full depth, deliberately, but the depth result
 should not be read as a claim about the official scorer.** On this local

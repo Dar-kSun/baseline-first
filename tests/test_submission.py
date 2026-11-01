@@ -1,6 +1,8 @@
 import os
+import pathlib
 import shutil
 import subprocess
+import sys
 
 import anndata as ad
 import numpy as np
@@ -110,3 +112,38 @@ def test_depth_thins_reads_proportionally():
     thin = simulate_cells(controls, fold, 30_000, np.random.default_rng(0), depth=0.3)
     ratio = np.asarray(thin.mean(axis=0)).ravel() / np.asarray(full.mean(axis=0)).ravel()
     assert np.allclose(ratio, 0.3, rtol=0.05)
+
+
+SCRIPT = "scripts/20_make_vcc_submission.py"
+
+
+def run_builder(*args):
+    return subprocess.run(
+        [sys.executable, SCRIPT, *args],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+    )
+
+
+def test_a_thinned_submission_is_refused_without_the_override():
+    """A thinned prediction scores better without predicting better, so building
+    one must be deliberate. This is the repo's position on the depth artefact,
+    enforced where a submission is actually made."""
+    result = run_builder("--method", "mean", "--depth", "0.3")
+    assert result.returncode != 0
+    assert "--i-know-this-games-the-metric" in result.stderr
+
+
+def test_full_depth_is_not_refused():
+    """The guard must reject only thinning: at depth 1 the run gets as far as
+    needing real data, not the refusal."""
+    result = run_builder("--method", "mean", "--depth", "1.0", "--vcc-dir", "no/such/bundle")
+    assert "--i-know-this-games-the-metric" not in (result.stdout + result.stderr)
+
+
+def test_the_override_is_recorded_in_the_run_json():
+    """A thinned file must not be mistakable for a full-depth one later, so the
+    flag is written into the record rather than only passed at the console."""
+    source = pathlib.Path(SCRIPT).read_text()
+    assert '"depth_override": args.i_know_this_games_the_metric,' in source

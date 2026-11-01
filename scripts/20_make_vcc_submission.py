@@ -20,9 +20,13 @@ built — on the genes they share with each other and the VCC gene axis. Targets
 are never looked up, only described by co-expression. The four Replogle/Nadig
 lines on their own are the configuration scripts/15 scored against held-out H1.
 
-`--depth` keeps each read with that probability. Leave it at 1: a lower depth
-than the challenge's own control cells inflates the DE metrics through
-spurious calls (see docs/findings.md), which is not a real improvement.
+`--depth` keeps each read with that probability, and anything below 1 is
+REFUSED unless --i-know-this-games-the-metric is passed as well. A prediction
+whose cells are thinner than the challenge's own control cells scores better
+without predicting anything: on this repo's rehearsal a no-change prediction
+at 0.3x depth scored the same as a real model at 0.3x, through spurious
+differential-expression calls (see docs/findings.md). The override is recorded
+in the run JSON so a thinned file can never be mistaken for a full-depth one.
 A full-depth file holds about 2.0 billion stored values, which `vcc prep`
 packages in roughly 21 GiB of RAM.
 
@@ -68,6 +72,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--method", choices=sorted(NAMES), default="ridge")
     parser.add_argument("--depth", type=float, default=1.0, help="read-keeping probability")
+    parser.add_argument(
+        "--i-know-this-games-the-metric",
+        action="store_true",
+        help="permit --depth below 1, which inflates the DE metrics without predicting better",
+    )
     parser.add_argument("--no-prep", action="store_true", help="skip vcc prep")
     parser.add_argument(
         "--vcc-dir",
@@ -76,6 +85,17 @@ def main() -> None:
         help="an unpacked controls bundle; its manifest.json names the contexts",
     )
     args = parser.parse_args()
+    # A thinned submission is not a better prediction, it just exploits the DE
+    # metrics, so building one has to be deliberate rather than a stray flag.
+    if args.depth != 1.0 and not args.i_know_this_games_the_metric:
+        sys.exit(
+            f"--depth {args.depth:g} would thin the predicted cells below the challenge's own "
+            "controls, which inflates the differential-expression metrics without predicting "
+            "anything better: a no-change prediction at 0.3x depth scored as well as a real "
+            "model at 0.3x on this repo's rehearsal (docs/findings.md). "
+            "Pass --i-know-this-games-the-metric as well if that is genuinely what you want; "
+            "it is recorded in the run JSON."
+        )
     vcc = args.vcc_dir
     commit = git_commit()
     name = NAMES[args.method] + (f"-d{args.depth:g}" if args.depth < 1 else "")
@@ -159,6 +179,7 @@ def main() -> None:
                 "model_name": name,
                 "method": args.method,
                 "depth": args.depth,
+                "depth_override": args.i_know_this_games_the_metric,
                 "git_commit": commit,
                 "panel_id": manifest["panel_id"],
                 "contexts_predicted": contexts_wanted,
