@@ -246,3 +246,45 @@ baseline error reads 0.
    and its Jaccard 0.0002, so DE-metric scaled scores on H1 will not carry
    over to the official contexts; the other anchors fall in or near the
    official ranges.
+
+## What `vcc prep` actually costs to package a full-size submission
+
+The final-round entry is 360,000 cells x 18,533 genes with 1,989,779,692
+stored entries, and whether a 24 GB laptop can package that at all decided
+whether this project could enter. `vcc-cli` 0.3.0 answers it up front:
+`sizing.prep_peak_gib(nnz, casts, reordered)` models the peak as
+`copies * 8 bytes * nnz + 2 GiB`, with `copies` 1.3 when prep's `astype`
+aliases (the input dtype already matches the float32 output encoding) and 2.2
+when it makes a second full-matrix copy. Storing X as float32 rather than
+int32 is therefore worth about 13 GiB on a file this size, which is why
+`write_submission` does.
+
+That model was checked rather than trusted. A 60,000-cell slice of the
+submitted file (20,000 from each context, 331,761,889 stored entries) was
+written twice, gzip-compressed and uncompressed, and `vcc prep --dry-run` run
+on each while sampling peak working set across the process tree. Unlike every
+other number in this file, this one comes from a one-off harness rather than a
+script in `scripts/`: slice the file, run prep on each twin, and take the
+maximum `PeakWorkingSet64` over the process tree.
+
+| input | on disk | peak resident | peak commit | predicted |
+|---|---|---|---|---|
+| gzip | 0.63 GiB | 5.06 GiB | 5.64 GiB | 5.21 GiB |
+| uncompressed | 2.48 GiB | 5.06 GiB | 5.64 GiB | 5.21 GiB |
+
+Three things worth recording:
+
+1. **The model is accurate, and conservative in the safe direction.** It
+   over-predicts by 0.15 GiB (3%); the measured slope is 1.24x the matrix
+   against the 1.3x it assumes. Scaled to the full file, that puts the real
+   peak near 20 GiB, not the ~31 GB an earlier version of
+   `results/vcc_submission/arV1-MeanResponse.json` claimed.
+2. **Input compression costs runtime, not memory.** The two runs peak
+   identically to the hundredth of a GiB; gzip cost 17s against 8s. HDF5
+   decompresses chunk by chunk straight into the destination array, so there
+   is no decompressed intermediate to pay for.
+3. **Measure the right process.** `vcc.exe` is a launcher stub that spawns a
+   python.exe that spawns the python.exe holding the matrix. Sampling the stub
+   or its direct children reports a peak of roughly nothing, and a machine's
+   system-wide commit charge counts every other process on it — the error that
+   produced the retracted 31 GB figure.

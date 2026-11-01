@@ -43,7 +43,17 @@
     "holding the control matrices). The shrinkage figures are as scripts/20 printed them, to",
     "three decimal places; re-running `python scripts/20_make_vcc_submission.py --method mean`",
     "reproduces them exactly, since the pipeline is seeded (seed 0).",
-    "prep_peak_gib in vcc/sizing.py predicted ~21.3 GiB for this file; it actually committed",
-    "about 31 GB, which that model does not capture for an internally gzip-compressed input."
+    "RETRACTED: an earlier version of this record said prep_peak_gib (vcc/sizing.py)",
+    "under-predicted this run -- ~21.3 GiB predicted against ~31 GB actual -- and blamed the",
+    "gap on the input being gzip-compressed internally. That was wrong. The 31 GB was the",
+    "machine's system-wide commit charge, which counts every other process on it; prep's own",
+    "peak was never measured. Re-measured since, on a 60,000-cell slice of this same file",
+    "(331,761,889 stored entries, `vcc prep --dry-run`, peak working set over the process",
+    "tree -- the matrix is held by a grandchild python.exe, not the vcc.exe stub): 5.06 GiB",
+    "actual against the model's 5.21 GiB, the same to the hundredth of a GiB whether the",
+    "input was gzip-compressed (0.63 GiB on disk) or uncompressed (2.48 GiB). Compression",
+    "changed the runtime, 17s against 8s, and not the memory. Scaled to this file's",
+    "1,989,779,692 entries, the measured 1.24x-the-matrix slope puts the real peak near",
+    "20 GiB. The model is accurate and slightly conservative, as its own docstring intends."
   ]
 }

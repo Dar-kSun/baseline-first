@@ -95,8 +95,9 @@ trained on four public CRISPRi screens (K562, RPE1, HepG2, Jurkat) over the
 6,197 genes they share with the VCC gene axis. Target genes were never looked
 up, only described by co-expression. Final-phase scores stay hidden until the
 winners are announced, so **no score is recorded here and no placement is
-implied.** Full build provenance, including a power loss during the first
-`vcc prep` run and the standalone re-run that replaced it, is in
+implied**; the round's own submissions close on 5 November 2026. Full build
+provenance, including a power loss during the first `vcc prep` run and the
+standalone re-run that replaced it, is in
 [`results/vcc_submission/arV1-MeanResponse.json`](results/vcc_submission/arV1-MeanResponse.json).
 
 **Local rehearsal with the official metrics.** The challenge's own scorer
@@ -120,11 +121,17 @@ full-depth controls: a weakness of the metrics worth knowing about, not a
 better prediction. Details and caveats (the local anchors differ from the
 official ones on two metrics) are in [`docs/findings.md`](docs/findings.md).
 
-**The entry was submitted at full depth, deliberately.** On this rehearsal a
-thinned entry scores twice what a full-depth one does, and a thinned
-*no-change* entry scores the same as a thinned model. That is the artefact
-above, not a prediction, so it was not used. The mean response and the
-co-expression ridge tie at 0.06 here, and the simpler of the two was entered.
+**The entry was submitted at full depth, deliberately, but the depth result
+should not be read as a claim about the official scorer.** On this local
+rehearsal a thinned entry scores twice what a full-depth one does, and a
+thinned *no-change* entry scores the same as a thinned model. Both of those
+gains run through direction fidelity and Jaccard, which are the same two
+metrics whose local 0-anchors sit far from the official bundles (0.017 here
+against 0.505-0.522 there). So the size of the effect, and possibly the effect
+itself, may belong to this reference rather than to the challenge's. It was
+treated as a reason to be conservative, not as a result: full depth was
+entered. The mean response and the co-expression ridge tie at 0.06 here, and
+the simpler of the two was entered.
 
 ## Limitations
 
@@ -132,9 +139,10 @@ co-expression ridge tie at 0.06 here, and the simpler of the two was entered.
   K562). Transfer results are on four CRISPRi cell lines' essential-gene
   screens and are computed on pseudobulks without the official metrics'
   finite-cell corrections.
-- **Metrics.** MAE, RMSE, Pearson delta and the VCC perturbation
-  discrimination score. The VCC's four differential-expression metrics are
-  not reproduced locally yet.
+- **Metrics.** This repo implements MAE, RMSE, Pearson delta and the VCC
+  perturbation discrimination score. Its four differential-expression metrics
+  are not reimplemented here: where they appear above, they come from the
+  challenge's own `cell-eval2`, called by `scripts/15_local_vcc_score_h1.py`.
 - **Splits.** Perturbation-level splits allow a held-out single gene to appear
   inside a training pair; Norman pair scores depend strongly on whether their
   single-gene perturbations were seen (see `docs/findings.md`).
