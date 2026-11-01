@@ -87,11 +87,17 @@ only a weak signal.
 
 ## Virtual Cell Challenge 2026
 
-Registered for Arc Institute's 2026 Virtual Cell Challenge (validation round:
-3 cell contexts x 300 CRISPRi targets; final test set 22 October, submissions
-close 5 November 2026, dates confirmed on the official site). **No submission
-has been made yet.** This section will state exactly what is entered, and its
-score once known; it will not imply a placement.
+**Entered.** `arV1-MeanResponse` was submitted to the **final round** on
+1 November 2026 (entry `Hu8TAlvVsGrmdmZt95Mo`, panel `vcc2026-test-1`,
+contexts D, E and F; 360,000 cells over 18,533 genes, 120,000 per context).
+The method is the scaled average response measured in other cell lines,
+trained on four public CRISPRi screens (K562, RPE1, HepG2, Jurkat) over the
+6,197 genes they share with the VCC gene axis. Target genes were never looked
+up, only described by co-expression. Final-phase scores stay hidden until the
+winners are announced, so **no score is recorded here and no placement is
+implied.** Full build provenance, including a power loss during the first
+`vcc prep` run and the standalone re-run that replaced it, is in
+[`results/vcc_submission/arV1-MeanResponse.json`](results/vcc_submission/arV1-MeanResponse.json).
 
 **Local rehearsal with the official metrics.** The challenge's own scorer
 (`cell-eval2`, `vcc2026` preset) was run on a challenge-style reference built
@@ -113,6 +119,12 @@ because thinned cells produce spurious differential-expression calls against
 full-depth controls: a weakness of the metrics worth knowing about, not a
 better prediction. Details and caveats (the local anchors differ from the
 official ones on two metrics) are in [`docs/findings.md`](docs/findings.md).
+
+**The entry was submitted at full depth, deliberately.** On this rehearsal a
+thinned entry scores twice what a full-depth one does, and a thinned
+*no-change* entry scores the same as a thinned model. That is the artefact
+above, not a prediction, so it was not used. The mean response and the
+co-expression ridge tie at 0.06 here, and the simpler of the two was entered.
 
 ## Limitations
 
