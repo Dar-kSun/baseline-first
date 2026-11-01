@@ -193,10 +193,13 @@ def pseudobulk(
         if checkpoint is not None and ((i + 1) % checkpoint_every == 0 or last):
             np.savez(checkpoint, next_row=stop, **state)
         if (i + 1) % log_every == 0 or last:
-            rate = (stop - start) / (time.time() - began)
+            # A small run can finish a chunk inside the clock's resolution, which
+            # made this line divide by zero and take the whole job down with it.
+            elapsed = time.time() - began
+            rate = (stop - start) / elapsed if elapsed > 0 else 0.0
+            left = f"{(n - stop) / rate / 60:.0f} min left" if rate > 0 else "rate unknown"
             print(
-                f"  {stop:,}/{n:,} cells, {(n - stop) / rate / 60:.0f} min left, "
-                f"{int(state['skipped'].sum())} skipped",
+                f"  {stop:,}/{n:,} cells, {left}, {int(state['skipped'].sum())} skipped",
                 flush=True,
             )
 
